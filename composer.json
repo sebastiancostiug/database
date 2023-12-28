@@ -1,0 +1,32 @@
+{
+    "name": "sebastiancostiug/database",
+    "description": "A database interaction package based on PDO",
+    "authors": [
+        {
+            "name": "Sebastian Costiug",
+            "email": "sebastian@overbyte.dev",
+            "homepage": "https://overbyte.dev"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "version": "0.0.1",
+    "license": "BSD-3-Clause",
+    "type": "database",
+    "keywords": [
+        "database",
+        "pdo",
+        "php"
+    ],
+    "require": {
+        "php": "^8.2",
+        "sebastiancostiug/helpers": "dev-master"
+    },
+    "repositories": [
+        {
+            "name": "sebastiancostiug/helpers",
+            "type": "git",
+            "url": "https://github.com/sebastiancostiug/helpers.git"
+        }
+    ]
+}
