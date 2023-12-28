@@ -17,8 +17,8 @@
 
 namespace seb\database;
 
-use core\components\traits\Singleton;
 use PDO;
+use seb\common\Singleton;
 
 /**
  * Database class

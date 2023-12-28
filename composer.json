@@ -20,13 +20,17 @@
     ],
     "require": {
         "php": "^8.2",
-        "sebastiancostiug/helpers": "dev-master"
+        "sebastiancostiug/helpers": "dev-master",
+        "sebastiancostiug/common": "dev-master"
     },
     "repositories": [
         {
-            "name": "sebastiancostiug/helpers",
             "type": "git",
             "url": "https://github.com/sebastiancostiug/helpers.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/sebastiancostiug/common.git"
         }
     ]
 }
