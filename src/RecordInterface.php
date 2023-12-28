@@ -15,7 +15,7 @@
  *
  */
 
-namespace seb\database;
+namespace database;
 
 /**
  * Record interface

@@ -23,6 +23,11 @@
         "sebastiancostiug/helpers": "dev-master",
         "sebastiancostiug/common": "dev-master"
     },
+    "autoload": {
+        "psr-4": {
+            "database\\": "src"
+        }
+    },
     "repositories": [
         {
             "type": "git",

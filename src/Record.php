@@ -13,7 +13,7 @@
  * @since       2023.10.15
  */
 
-namespace seb\database;
+namespace database;
 
 /**
  * Record class

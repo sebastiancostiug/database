@@ -15,10 +15,10 @@
  *
  */
 
-namespace seb\database;
+namespace database;
 
 use PDO;
-use seb\common\Singleton;
+use common\Singleton;
 
 /**
  * Database class
