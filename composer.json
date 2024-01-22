@@ -19,7 +19,7 @@
         "php"
     ],
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "sebastiancostiug/helpers": "dev-master",
         "sebastiancostiug/common": "dev-master"
     },
