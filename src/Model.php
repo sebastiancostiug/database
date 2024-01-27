@@ -522,7 +522,7 @@ class Model implements RecordInterface
 
                 case 'compare':
                     foreach ($fields as $field => $compare) {
-                        if ($this->$field !== $this->$compare) {
+                        if ($this->$field !== $this->$compare || !password_verify($this->$compare, $this->$field)) {
                             $this->errors[$field][] = $this->labels[$field] . ' does not match';
                         }
                     }
