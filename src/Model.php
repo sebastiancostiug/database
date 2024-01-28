@@ -412,7 +412,9 @@ class Model implements RecordInterface
         $attributes = [];
 
         foreach ($this->fillable as $key) {
-            $attributes[$key] = $this->$key;
+            if (isset($this->$key) && !empty($this->$key) && !in_array($key, $this->hidden)) {
+                $attributes[$key] = $this->$key;
+            }
         }
 
         return $attributes;
