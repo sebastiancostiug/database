@@ -19,6 +19,8 @@
 namespace database;
 
 use AllowDynamicProperties;
+use common\Translator;
+use core\components\ValidationFactory;
 
 /**
  * Model class
@@ -58,6 +60,16 @@ class Model implements RecordInterface
     }
 
     /**
+     * Get the model's table name
+     *
+     * @return string
+     */
+    public function tableName()
+    {
+        return $this->table;
+    }
+
+    /**
      * afterFind
      *
      * @return $this
@@ -83,7 +95,6 @@ class Model implements RecordInterface
                 }
             }
         }
-        $this->applyFilters();
     }
 
     /**
@@ -94,7 +105,11 @@ class Model implements RecordInterface
     public function validate()
     {
         $this->beforeValidate();
-        $this->validateRules();
+
+        $validator = new ValidationFactory(app()->resolve(Translator::class));
+
+        $data = $validator->filter($this->attributes(), $this->filters);
+        $this->errors = $validator->enforce($data, $this->rules);
 
         return empty($this->errors);
     }
@@ -304,6 +319,21 @@ class Model implements RecordInterface
     }
 
     /**
+     * Check if a record exists in the database based on a column and value.
+     *
+     * @param string $column The column to search in.
+     * @param mixed  $value  The value to search for.
+     *
+     * @return boolean Returns true if a record exists, false otherwise.
+     */
+    public function exists($column, mixed $value)
+    {
+        $record = new Record(static::class);
+
+        return (bool) $record->find()->where([$column => $value])->one();
+    }
+
+    /**
      * Save the record
      *
      * @return integer|false The ID of the saved record, or false if the record failed to save.
@@ -450,128 +480,6 @@ class Model implements RecordInterface
     public function hasAttribute($name)
     {
         return property_exists($this, $name);
-    }
-
-    /**
-     * Validate the model rules
-     *
-     * @return void
-     */
-    public function validateRules()
-    {
-        $this->errors = [];
-
-        $rules = $this->has('scenario') ? $this->rules[$this->scenario] : $this->rules;
-
-        foreach ($rules as $enforce => $fields) {
-            switch ($enforce) {
-                case 'required':
-                    foreach ($fields as $field) {
-                        if (empty($this->$field)) {
-                            $this->errors[$field][] = $this->labels[$field] . ' is required';
-                        }
-                    }
-                    break;
-
-                case 'email':
-                    foreach ($fields as $field) {
-                        if (!filter_var($this->$field, FILTER_VALIDATE_EMAIL)) {
-                            $this->errors[$field][] = $this->labels[$field] . ' is not a valid email address';
-                        }
-                    }
-                    break;
-
-                case 'unique':
-                    foreach ($fields as $field) {
-                        $user = static::findAllBy($field, $this->$field);
-                        if ($user) {
-                            $this->errors[$field][] = $this->labels[$field] . ' already exists';
-                        }
-                    }
-                    break;
-
-                case 'lengthMin':
-                    foreach ($fields as $field => $rule) {
-                        if (strlen($this->$field ?? '') < $rule) {
-                            $this->errors[$field][] = $this->labels[$field] . ' must be at least ' . $rule . ' characters long';
-                        }
-                    }
-                    break;
-
-                case 'lengthMax':
-                    foreach ($fields as $field => $rule) {
-                        if (strlen($this->$field ?? '') > $rule) {
-                            $this->errors[$field][] = $this->labels[$field] . ' must be at most ' . $rule . ' characters long';
-                        }
-                    }
-                    break;
-
-                case 'strength':
-                    foreach ($fields as $field) {
-                        if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*(_|[^\w])).+$/', $this->$field ?? '')) {
-                            $this->errors[$field][] = $this->labels[$field] . ' must contain at least one lowercase letter, one uppercase letter, one digit and one special character';
-                        }
-                    }
-                    break;
-
-                case 'in':
-                    foreach ($fields as $field => $values) {
-                        if (!in_array($this->$field, $values)) {
-                            $this->errors[$field][] = $this->labels[$field] . ' is not valid';
-                        }
-                    }
-                    break;
-
-                case 'compare':
-                    foreach ($fields as $field => $compare) {
-                        if ($this->$field !== $this->$compare || !password_verify($this->$compare, $this->$field)) {
-                            $this->errors[$field][] = $this->labels[$field] . ' does not match';
-                        }
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-        }
-    }
-
-    /**
-     * Apply filters to the model attributes
-     *
-     * @return void
-     */
-    public function applyFilters()
-    {
-        foreach ($this->filters as $filter => $fields) {
-            foreach ($fields as $field) {
-                if (!isset($this->$field)) {
-                    continue;
-                }
-                switch ($filter) {
-                    case 'trim':
-                        $this->$field = trim($this->$field);
-                        break;
-
-                    case 'stripTags':
-                        $this->$field = strip_tags($this->$field);
-                        break;
-
-                    case 'lowercase':
-                        $this->$field = strtolower($this->$field);
-                        break;
-
-                    case 'hash':
-                        if ($this->has('scenario') && $this->scenario !== 'login') {
-                            $this->$field = password_hash($this->$field, PASSWORD_BCRYPT);
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-        }
     }
 
     /**
