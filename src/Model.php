@@ -20,7 +20,7 @@ namespace database;
 
 use AllowDynamicProperties;
 use common\Translator;
-use core\components\ValidationFactory;
+use core\components\Validator;
 
 /**
  * Model class
@@ -106,12 +106,9 @@ class Model implements RecordInterface
     {
         $this->beforeValidate();
 
-        $validator = new ValidationFactory(app()->resolve(Translator::class));
+        $validator = new Validator(app()->resolve(Translator::class), $this->attributes());
 
-        $data = $validator->filter($this->attributes(), $this->filters);
-        $this->errors = $validator->enforce($data, $this->rules);
-
-        return empty($this->errors);
+        return !$validator->filter($this->filters)->enforce($this->rules)->fails();
     }
 
     /**
