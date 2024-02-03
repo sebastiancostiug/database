@@ -6,7 +6,9 @@
 
 I didn't want to import big libraries and packages<br/>
 The intention is to keep my apps as slim and as close to clean php as possible<br/>
-I got the idea from from Zak Horton's [Slim 4 Authorization Tutorial ](https://github.com/zhorton34/authorize-slim-4) to create my own.<br/>
+I got the idea from Zak Horton's [Slim 4 Authorization Tutorial ](https://github.com/zhorton34/authorize-slim-4) to create my own.<br/>
+
+This series of repos also contains a mash of mixed ideas for classes, methods and aproaches I liked from [Laravel](https://github.com/laravel) and [Yii2](https://github.com/yiisoft).<br/>
 
 ---
 
