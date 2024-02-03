@@ -19,6 +19,7 @@
 namespace database;
 
 use AllowDynamicProperties;
+use common\Component;
 use common\Translator;
 use core\components\Validator;
 
@@ -26,7 +27,7 @@ use core\components\Validator;
  * Model class
  */
 #[AllowDynamicProperties]
-class Model implements RecordInterface
+class Model extends Component implements RecordInterface
 {
     /**
      * @var array $fillable Fillable
@@ -41,23 +42,6 @@ class Model implements RecordInterface
         'created' => 'Created',
         'updated' => 'Updated',
     ];
-
-    /**
-     * Magic method to get a property value by calling its corresponding getter method.
-     *
-     * @param string $name The name of the property to get.
-     *
-     * @return mixed The value of the property. Null if the property does not exist or is write-only.
-     */
-    public function __get($name): mixed
-    {
-        $method = 'get' . ucfirst($name);
-        if (method_exists($this, $method)) {
-            return $this->$method();
-        }
-
-        return null;
-    }
 
     /**
      * Get the model's table name
