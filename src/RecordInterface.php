@@ -9,7 +9,7 @@
  * @copyright   2019-2023 Sebastian Costiug
  * @license     https://opensource.org/licenses/BSD-3-Clause
  *
- * @category    Database
+ * @category    database
  *
  * @since       2023-11-01
  *

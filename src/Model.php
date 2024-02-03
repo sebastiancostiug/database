@@ -1,7 +1,6 @@
 <?php
 /**
- *
- * @package     slim-base
+ * @package     Database
  *
  * @subpackage  Model
  *
@@ -9,11 +8,9 @@
  * @copyright   2019-2023 Sebastian Costiug
  * @license     https://opensource.org/licenses/BSD-3-Clause
  *
- * @category    slim-base
- * @see
+ * @category    database
  *
  * @since       2023-10-30
- *
  */
 
 namespace database;

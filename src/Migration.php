@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * @package     Database
  *
  * @subpackage  Migration
@@ -12,7 +11,6 @@
  * @category    database
  *
  * @since       2023-10-31
- *
  */
 
 namespace database;
