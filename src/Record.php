@@ -442,4 +442,14 @@ class Record
     {
         return $this->sql;
     }
+
+    /**
+     * getColumns
+     *
+     * @return array
+     */
+    public function getColumns()
+    {
+        return $this->database->getColumns(static::$table);
+    }
 }

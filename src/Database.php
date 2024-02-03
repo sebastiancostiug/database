@@ -540,14 +540,14 @@ class Database
         throw_when(empty($data), 'Data is required');
 
         $columnDefinitions = implode(', ', array_map(function ($key, $value) {
-            if (!in_array($key, ['id', 'created', 'updated'])) {
+            if (!in_array($key, ['id', 'created_at', 'updated_at'])) {
                 return "`$key` " . self::getDataType($value);
             }
         }, array_keys($data), $data));
 
         $columnDefinitions = trim($columnDefinitions, ', ');
 
-        $sql = "CREATE TABLE IF NOT EXISTS `$table` (`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, $columnDefinitions, `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP)";
+        $sql = "CREATE TABLE IF NOT EXISTS `$table` (`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, $columnDefinitions, `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP)";
 
         try {
             $statement = self::$connection->prepare($sql);
@@ -603,6 +603,30 @@ class Database
             return $statement->execute();
         } catch (\Throwable $th) {
             log_to_file('database', 'Truncate table failed:', $th->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves the column names of a specified table in the database.
+     *
+     * @param string|null $table The name of the table. If null, retrieves column names for all tables.
+     * @return array|false An array of column names if successful, false otherwise.
+     */
+    public static function getColumns($table = null): array|false
+    {
+        throw_when(is_null($table), 'Table name is required');
+
+        $sql = "SHOW COLUMNS FROM `{$table}`";
+
+        try {
+            $statement = self::$connection->prepare($sql);
+            $statement->execute();
+
+            return $statement->fetchAll(PDO::FETCH_COLUMN);
+        } catch (\Throwable $th) {
+            log_to_file('database', 'Get column names failed:', $th->getMessage());
 
             return false;
         }

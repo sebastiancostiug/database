@@ -23,20 +23,27 @@ namespace database;
 interface RecordInterface
 {
     /**
+     * Get record by conditions
+     *
+     * @return Record The record instance.
+     */
+    public static function find(): Record;
+
+    /**
      * Get record by ID
      *
      * @param integer $id The ID of the model to retrieve.
      *
      * @return self|false The model instance if found, or false if not found.
      */
-    public static function one(int $id): self|false;
+    public static function findOne($id): self|false;
 
     /**
      * Get all records
      *
      * @return array
      */
-    public static function all(): array|false;
+    public static function findAll(): array|false;
 
     /**
      * Get record by field
@@ -57,24 +64,6 @@ interface RecordInterface
      * @return array|false An array with all records of the model or false if no records are found.
      */
     public static function findAllBy(string $field, string $value): array|false;
-
-    /**
-     * Get record by conditions
-     *
-     * @param  array $conditions Conditions
-     *
-     * @return self|false The model instance if found, or false if not found.
-     */
-    public static function find(array $conditions): self|false;
-
-    /**
-     * Get records by conditions
-     *
-     * @param  array $conditions Conditions
-     *
-     * @return array|false An array with all records of the model or false if no records are found.
-     */
-    public static function findAll(array $conditions): array|false;
 
     /**
      * save record

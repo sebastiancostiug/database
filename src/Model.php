@@ -18,7 +18,6 @@
 
 namespace database;
 
-use AllowDynamicProperties;
 use common\Component;
 use common\Translator;
 use core\components\Validator;
@@ -26,22 +25,139 @@ use core\components\Validator;
 /**
  * Model class
  */
-#[AllowDynamicProperties]
 class Model extends Component implements RecordInterface
 {
     /**
-     * @var array $fillable Fillable
+     * The default scenario for the model.
      */
-    public array $fillable = ['id', 'created', 'updated'];
+    const SCENARIO_DEFAULT = 'default';
 
     /**
      * @var array $labels Labels
      */
-    public array $labels = [
-        'id'      => 'ID',
-        'created' => 'Created',
-        'updated' => 'Updated',
+    protected array $labels = [
+        'id'         => 'ID',
+        'created_at' => 'Created at',
+        'updated_at' => 'Updated at',
     ];
+
+    /**
+     * @var array $defaults Defaults
+     */
+    protected array $defaults;
+
+    /**
+     * @var array $rules Rules
+     */
+    protected array $rules = [
+        'id'         => 'integer',
+        'created_by' => 'integer',
+        'updated_by' => 'integer',
+    ];
+
+    /**
+     * @var array $filters Filters
+     */
+    protected array $filters = [
+            'id'         => 'integer',
+            'created_by' => 'integer',
+            'created_at' => 'datetime',
+            'updated_by' => 'integer',
+            'updated_at' => 'datetime',
+        ];
+
+    /**
+     * The array to store any validation errors for the model.
+     *
+     * @var array
+     */
+    protected array $errors = [];
+
+    /**
+     * @var array attribute values indexed by attribute names
+     */
+    private $_attributes = [];
+
+    /**
+     * The array that stores the old attribute values of the model.
+     *
+     * @var array
+     */
+    protected array $oldAttributes = [];
+
+    /**
+     * The array that holds the changed attributes of the model.
+     *
+     * @var array
+     */
+    protected array $changedAttributes = [];
+
+    /**
+     * Constructor for the Model class.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->setLabels($this->labels());
+        $this->setRules($this->rules());
+        $this->setFilters($this->filters());
+        $this->setDefaults($this->defaults());
+
+        $this->init();
+    }
+
+    /**
+     * Initializes the model.
+     *
+     * This method is called at the end of the constructor.
+     * The default implementation raises an x@xxx \core\events\Event} event.
+     * You may override this method to do some initialization when your model is created.
+     *
+     * @return void
+     */
+    public function init()
+    {
+    }
+
+    /**
+     * Magic method to get a property value by calling its corresponding getter method.
+     *
+     * @param string $name The name of the property to get.
+     *
+     * @return mixed The value of the property. Null if the property does not exist or is write-only.
+     */
+    public function __get($name): mixed
+    {
+        if (in_array($name, $this->attributeNames())) {
+            return $this->_attributes[$name] ?? null;
+        }
+        return parent::__get($name);
+    }
+
+    /**
+     * Sets the value of a component property.
+     *
+     * This method will check in the following order and act accordingly:
+     *
+     *  - a property defined by a setter: set the property value
+     *
+     * Do not call this method directly as it is a PHP magic method that
+     * will be implicitly called when executing `$component->property = $value;`.
+     *
+     * @param string $name  The property name or the event name
+     * @param mixed  $value The property value
+     *
+     * @return void
+     */
+    public function __set($name, mixed $value)
+    {
+        if (in_array($name, $this->attributeNames())) {
+            $this->_attributes[$name] = $value;
+        } else {
+            parent::__set($name, $value);
+        }
+    }
 
     /**
      * Get the model's table name
@@ -146,45 +262,15 @@ class Model extends Component implements RecordInterface
     }
 
     /**
-     * Returns a single model instance
+     * Find a record by conditions
      *
-     * @param  integer $id ID
-     *
-     * @return self|false The model instance if found, or false if not found.
+     * @return Record The model instance if found, or false if not found.
      */
-    public static function one($id): self|false
+    public static function find(): Record
     {
         $record = new Record(static::class);
-        $data = $record->find()->where(['id' => $id])->one();
 
-        if (empty($data)) {
-            return false;
-        }
-
-        return static::loadData($data)->afterFind();
-    }
-
-    /**
-     * Get all records of the model
-     *
-     * @return array|false An array with all records of the model or false if no records are found.
-     */
-    public static function all(): array|false
-    {
-        $record = new Record(static::class);
-        $fetchData = $record->find()->all();
-
-        if (empty($fetchData)) {
-            return false;
-        }
-
-        $results = [];
-        foreach ($fetchData as $data) {
-            $model = static::loadData($data)->afterFind();
-            $results[] = $model;
-        }
-
-        return $results;
+        return  $record->find();
     }
 
     /**
@@ -197,36 +283,18 @@ class Model extends Component implements RecordInterface
      */
     public static function findBy(string $field, string $value): self|false
     {
-        $record = new Record(static::class);
-        $fetchData = $record->find()->where([$field => $value])->one();
+        $record = static::find()->where([$field => $value])->one();
 
-        if (empty($fetchData)) {
+        if (empty($record)) {
             return false;
         }
 
-        return static::loadData($fetchData)->afterFind();
+        $instance = new static();
+
+        return $instance->load($record)->afterFind();
     }
 
-    /**
-     * Find a record by ID
-     *
-     * @param  integer $id ID
-     *
-     * @return self|false The model instance if found, or false if not found.
-     */
-    public static function findById(int $id): self|false
-    {
-        $record = new Record(static::class);
-        $fetchData = $record->find()->where(['id' => $id])->one();
-
-        if (empty($fetchData)) {
-            return false;
-        }
-
-        return static::loadData($fetchData)->afterFind();
-    }
-
-    /**
+        /**
      * Find all records by a specific field and value
      *
      * @param  string      $field Field
@@ -236,11 +304,7 @@ class Model extends Component implements RecordInterface
      */
     public static function findAllBy(string $field, string|null $value): array|false
     {
-        if (empty($value)) {
-            return false;
-        }
-        $record = new Record(static::class);
-        $fetchData = $record->find()->where([$field => $value])->all();
+        $fetchData = static::find()->where([$field => $value])->all();
 
         if (empty($fetchData)) {
             return false;
@@ -248,7 +312,8 @@ class Model extends Component implements RecordInterface
 
         $results = [];
         foreach ($fetchData as $data) {
-            $model = static::loadData($data)->afterFind();
+            $instance = new static();
+            $model = $instance->load($data)->afterFind();
             $results[] = $model;
         }
 
@@ -256,35 +321,32 @@ class Model extends Component implements RecordInterface
     }
 
     /**
-     * Find a record by conditions
+     * Returns a single model instance
      *
-     * @param  array $conditions Conditions
+     * @param  integer $id ID
      *
      * @return self|false The model instance if found, or false if not found.
      */
-    public static function find(array $conditions): self|false
+    public static function findOne($id): self|false
     {
-        $record = new Record(static::class);
-        $fetchData = $record->find()->where($conditions)->one();
+        $record = static::find()->where(['id' => $id])->one();
 
-        if (empty($fetchData)) {
+        if (empty($record)) {
             return false;
         }
+        $instance = new static();
 
-        return static::loadData($fetchData)->afterFind();
+        return $instance->load($record)->afterFind();
     }
 
     /**
-     * Find all records by conditions
-     *
-     * @param  array $conditions Conditions
+     * Get all records of the model
      *
      * @return array|false An array with all records of the model or false if no records are found.
      */
-    public static function findAll(array $conditions = []): array|false
+    public static function findAll(): array|false
     {
-        $record = new Record(static::class);
-        $fetchData = $record->find()->where($conditions)->all();
+        $fetchData = static::find()->all();
 
         if (empty($fetchData)) {
             return false;
@@ -292,7 +354,8 @@ class Model extends Component implements RecordInterface
 
         $results = [];
         foreach ($fetchData as $data) {
-            $model = static::loadData($data)->afterFind();
+            $instance = new static();
+            $model = $instance->load($data)->afterFind();
             $results[] = $model;
         }
 
@@ -398,19 +461,25 @@ class Model extends Component implements RecordInterface
     }
 
     /**
-     * setAttributes
+     * Returns an array of attribute names for the model.
      *
-     * @param array $attributes Attributes
-     *
-     * @return void
+     * @return array The attribute names.
      */
-    public function setAttributes(array $attributes): void
+    public function attributeNames()
     {
-        foreach ($attributes as $key => $value) {
-            if (in_array($key, $this->fillable)) {
-                $this->$key = $value;
+        $record = new Record(static::class);
+
+        $attributes = $record->getColumns() ?? [];
+
+        $class = new \ReflectionClass($this);
+
+        foreach ($class->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+            if (!$property->isStatic()) {
+                $attributes[] = $property->getName();
             }
         }
+
+        return $attributes;
     }
 
     /**
@@ -422,13 +491,29 @@ class Model extends Component implements RecordInterface
     {
         $attributes = [];
 
-        foreach ($this->fillable as $key) {
-            if (isset($this->$key) && !empty($this->$key) && !in_array($key, $this->hidden)) {
-                $attributes[$key] = $this->$key;
-            }
+        foreach ($this->attributeNames() as $key) {
+            $attributes[$key] = $this->$key;
         }
 
         return $attributes;
+    }
+
+    /**
+     * setAttributes
+     *
+     * @param array $values Attribute values
+     *
+     * @return void
+     */
+    public function setAttributes(array $values): void
+    {
+        $attributes = $this->attributeNames();
+
+        foreach ($values as $name => $value) {
+            if (in_array($name, $attributes)) {
+                $this->$name = $value;
+            }
+        }
     }
 
     /**
@@ -438,7 +523,7 @@ class Model extends Component implements RecordInterface
      */
     public function setOldAttributes()
     {
-        $this->oldAttributes = !$this->isNewRecord() ? $this->attributes() : null;
+        $this->oldAttributes = !$this->isNewRecord() ? $this->getAttributes() : [];
     }
 
     /**
@@ -464,36 +549,147 @@ class Model extends Component implements RecordInterface
     }
 
     /**
-     * Load data into a new instance of the model.
+     * Get the default values for the model.
      *
-     * @param array $data The data to load into the model.
-     *
-     * @return self The new instance of the model with the loaded data.
+     * @return array The default values.
      */
-    public static function loadData(array $data): self
+    public function defaults(): array
     {
-        $model = new static();
-        foreach ($data as $key => $value) {
-            $model->$key = $value;
-        }
-
-        return $model;
+        return [];
     }
 
     /**
-     * Get the attributes that correspond to columns from the database
+     * Get the default values for the model.
      *
-     * @return array
+     * @return array The default values.
      */
-    public function attributes()
+    public function getDefaults(): array
     {
-        $attributes = [];
+        return $this->defaults;
+    }
 
-        foreach ($this->fillable as $field) {
-            $attributes[$field] = $this->$field;
+    /**
+     * Set the default values for the model.
+     *
+     * @param array $defaults The default values to set.
+     * @return void
+     */
+    public function setDefaults(array $defaults): void
+    {
+        $this->add('defaults', $defaults);
+    }
+
+    /**
+     * Get the validation rules for the model.
+     *
+     * @return array The validation rules.
+     */
+    public function rules(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the validation rules for the model.
+     *
+     * @return array The validation rules.
+     */
+    public function getRules(): array
+    {
+        return $this->rules;
+    }
+
+    /**
+     * Set the validation rules for the model.
+     *
+     * @param array $rules The validation rules to set.
+     * @return void
+     */
+    public function setRules(array $rules): void
+    {
+        $this->add('rules', $rules);
+    }
+
+    /**
+     * Get the filters for the model.
+     *
+     * @return array The filters for the model.
+     */
+    public function filters(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the filters for the model.
+     *
+     * @return array The filters for the model.
+     */
+    public function getFilters(): array
+    {
+        return $this->filters;
+    }
+
+    /**
+     * Set the filters for the model.
+     *
+     * @param array $filters The filters to be set.
+     * @return void
+     */
+    public function setFilters(array $filters): void
+    {
+        $this->add('filters', $filters);
+    }
+
+    /**
+     * Get the labels associated with the model.
+     *
+     * @return array The labels associated with the model.
+     */
+    public function getLabels(): array
+    {
+        return $this->labels;
+    }
+
+    /**
+     * Set the labels for the model.
+     *
+     * @param array $labels The labels to be set.
+     * @return void
+     */
+    public function setLabels(array $labels): void
+    {
+        $this->add('labels', $labels);
+    }
+
+    /**
+     * Get the default values for the model.
+     *
+     * @return array The default values.
+     */
+    public function labels(): array
+    {
+        return [];
+    }
+
+    /**
+     * Load data into a new instance of the model.
+     *
+     * @param array  $data  The data to load into the model.
+     * @param string $scope The scope of the data to load.
+     *
+     * @return self The new instance of the model with the loaded data.
+     */
+    public function load(array $data, string $scope = null): self
+    {
+        $model = new static();
+        if ($scope) {
+            $model->setAttributes($data[$scope]);
+        } else {
+            $model->setAttributes($data);
         }
 
-        return $attributes;
+        return $model;
     }
 
     /**
