@@ -30,6 +30,11 @@ class Model extends Component implements RecordInterface
     const SCENARIO_DEFAULT = 'default';
 
     /**
+     * @var string $scenario The scenario to be used for validation.
+     */
+    protected string $scenario = '';
+
+    /**
      * @var array $labels Labels
      */
     protected array $labels = [
@@ -41,7 +46,7 @@ class Model extends Component implements RecordInterface
     /**
      * @var array $defaults Defaults
      */
-    protected array $defaults;
+    protected array $defaults = [];
 
     /**
      * @var array $rules Rules
@@ -76,6 +81,11 @@ class Model extends Component implements RecordInterface
     private $_attributes = [];
 
     /**
+     * @var array $_privateAttributes The private attributes of the model.
+     */
+    private array $_privateAttributes = [];
+
+    /**
      * The array that stores the old attribute values of the model.
      *
      * @var array
@@ -92,14 +102,19 @@ class Model extends Component implements RecordInterface
     /**
      * Constructor for the Model class.
      *
+     * @param array $attributes The attributes to be set.
+     *
      * @return void
      */
-    public function __construct()
+    public function __construct(array $attributes = [])
     {
         $this->setLabels($this->labels());
         $this->setRules($this->rules());
         $this->setFilters($this->filters());
         $this->setDefaults($this->defaults());
+        $this->setPrivateAttributes($this->private());
+
+        $this->setAttributes($attributes);
 
         $this->init();
     }
@@ -203,9 +218,15 @@ class Model extends Component implements RecordInterface
     {
         $this->beforeValidate();
 
-        $validator = new Validator(app()->resolve(Translator::class), $this->attributes());
+        $validator = new Validator(app()->resolve(Translator::class), $this->attributes);
 
-        return !$validator->filter($this->filters)->enforce($this->rules)->fails();
+        if ($this->scenario) {
+            $rules   = $this->rules[$this->scenario] ?? [];
+            $filters = $this->filters[$this->scenario] ?? [];
+        }
+        $this->setErrors($validator->filter($filters)->enforce($rules)->errors());
+
+        return empty($this->errors);
     }
 
     /**
@@ -235,7 +256,7 @@ class Model extends Component implements RecordInterface
      */
     public function afterSave($insert)
     {
-        return true;
+        $this->forgetAttributes();
     }
 
     /**
@@ -514,6 +535,34 @@ class Model extends Component implements RecordInterface
     }
 
     /**
+     * Set the private attributes of the model.
+     *
+     * @param array $attributes The attributes to set.
+     *
+     * @return void
+     */
+    public function setPrivateAttributes(array $attributes): void
+    {
+        $this->_privateAttributes = $attributes;
+    }
+
+    /**
+     * Get the public attributes of the model.
+     *
+     * @return array
+     */
+    public function getPublicAttributes()
+    {
+        $attributes = $this->getAttributes();
+
+        foreach ($this->_privateAttributes as $attribute) {
+            unset($attributes[$attribute]);
+        }
+
+        return $attributes;
+    }
+
+    /**
      * Set the old attributes of the model
      *
      * @return void
@@ -639,6 +688,28 @@ class Model extends Component implements RecordInterface
     }
 
     /**
+     * Get the validation errors
+     *
+     * @return array
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    /**
+     * Set the validation errors
+     *
+     * @param array $errors The validation errors to set.
+     *
+     * @return void
+     */
+    public function setErrors(array $errors)
+    {
+        $this->errors = $errors;
+    }
+
+    /**
      * Get the labels associated with the model.
      *
      * @return array The labels associated with the model.
@@ -667,6 +738,27 @@ class Model extends Component implements RecordInterface
     public function labels(): array
     {
         return [];
+    }
+
+    /**
+     * Get the scenario for the model.
+     *
+     * @return string|null The scenario for the model.
+     */
+    public function getScenario()
+    {
+        return $this->scenario;
+    }
+
+    /**
+     * Set the scenario for the model.
+     *
+     * @param string $scenario The scenario to set.
+     * @return void
+     */
+    public function setScenario($scenario)
+    {
+        $this->scenario = $scenario;
     }
 
     /**
