@@ -37,7 +37,8 @@ class DatabaseException extends \Exception
      */
     public function __construct(string $message, array $debugInfo = [], int $code = 0, ?\Throwable $previous = null)
     {
-        parent::__construct($message);
+        parent::__construct($message, $code, $previous);
+
         $this->_debugInfo = $debugInfo;
     }
 
@@ -49,5 +50,15 @@ class DatabaseException extends \Exception
     public function getDebugInfo(): array
     {
         return $this->_debugInfo;
+    }
+
+    /**
+     * Get the exception name.
+     *
+     * @return string The exception name.
+     */
+    public function getName(): string
+    {
+        return 'Database exception';
     }
 }
