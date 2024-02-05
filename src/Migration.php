@@ -15,7 +15,6 @@
 
 namespace database;
 
-use database\exceptions\DatabaseException;
 use RuntimeException;
 
 /**
