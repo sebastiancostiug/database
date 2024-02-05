@@ -13,7 +13,7 @@
  * @since       2024-02-05
  */
 
-namespace database\exceptions;
+namespace database;
 
 /**
  * DatabaseConnectionException class

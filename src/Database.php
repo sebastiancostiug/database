@@ -17,7 +17,6 @@ namespace database;
 
 use PDO;
 use common\Singleton;
-use database\exceptions\DatabaseException;
 
 /**
  * Database class
