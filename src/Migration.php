@@ -15,6 +15,9 @@
 
 namespace database;
 
+use database\exceptions\DatabaseException;
+use RuntimeException;
+
 /**
  * Migration class
  */
@@ -47,7 +50,7 @@ class Migration
      */
     final public function __construct()
     {
-        throw_when(php_sapi_name() !== 'cli', 'This function can only be run from the console.');
+        throw_when(php_sapi_name() !== 'cli', ['This function can only be run from the console.'], RuntimeException::class);
 
         $this->database = Database::getInstance();
 
@@ -117,7 +120,7 @@ class Migration
      */
     public function table($table): self
     {
-        throw_when(empty($table), 'Table name is required');
+        throw_when(empty($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         $this->caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)[1]['function'];
 

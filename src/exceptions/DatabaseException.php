@@ -18,7 +18,7 @@ namespace database\exceptions;
 /**
  * DatabaseConnectionException class
  */
-class DatabaseConnectionException extends \Exception
+class DatabaseException extends \Exception
 {
     /**
      * @var array $debugInfo The errors that occurred during the connection.
@@ -26,7 +26,7 @@ class DatabaseConnectionException extends \Exception
     private array $_debugInfo;
 
     /**
-     * DatabaseConnectionException constructor.
+     * DatabaseException constructor.
      *
      * @param string          $message   The exception message.
      * @param array           $debugInfo The debug info for the error that occurred during the connection.

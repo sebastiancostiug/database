@@ -17,7 +17,7 @@ namespace database;
 
 use PDO;
 use common\Singleton;
-use database\exceptions\DatabaseConnectionException;
+use database\exceptions\DatabaseException;
 
 /**
  * Database class
@@ -54,7 +54,7 @@ class Database
      * @throws \PDOException if the connection fails or the driver is not supported.
      *
      * @return mixed
-     * @throws DatabaseConnectionException if the connection fails or the driver is not supported.
+     * @throws DatabaseException if the connection fails or the driver is not supported.
      */
     final protected function __construct()
     {
@@ -81,7 +81,7 @@ class Database
             default:
                 log_to_file('database', 'Unsupported database driver: ', $driver);
 
-                throw new DatabaseConnectionException("Unsupported database driver: $driver");
+                throw new DatabaseException("Unsupported database driver: $driver");
             break;
         }
 
@@ -92,7 +92,7 @@ class Database
         } catch (\PDOException $e) {
             log_to_file('database', 'Connection failed: ', $e->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Connection failed: ' . $e->getMessage(),
                 [
                     'params' => $databaseInfo,
@@ -118,11 +118,11 @@ class Database
      * @param string $table The table
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the connection or the query fails.
+     * @throws DatabaseException if the connection or the query fails.
      */
     public static function tableExists($table = null): bool
     {
-        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         // $cacheKey = "table_exists_$table";
         // $cachedResult = self::$cache->get($cacheKey);
@@ -150,7 +150,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Table exists failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Table exists failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -166,11 +166,11 @@ class Database
      * @param string $table The table
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the $table is empty or the query fails.
+     * @throws DatabaseException if the $table is empty or the query fails.
      */
     public static function tableIsEmpty($table = null): bool
     {
-        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         // $cacheKey = "table_is_empty_$table";
         // $cachedResult = self::$cache->get($cacheKey);
@@ -186,7 +186,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Table is empty failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Table is empty failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -212,11 +212,11 @@ class Database
      * $users = $db->query($query, $params);
      *
      * @return array For successful SELECT, SHOW, DESCRIBE or EXPLAIN queries will return an array of rows.
-     * @throws DatabaseConnectionException if the query is empty or it fails.
+     * @throws DatabaseException if the query is empty or it fails.
      */
     public static function query(string $query = '', array $params = null): array
     {
-        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
 
         try {
             $statement = self::$connection->prepare($query);
@@ -232,7 +232,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Query failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Query failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -255,11 +255,11 @@ class Database
      *  ]);
      *
      * @return array The first row of the result set.
-     * @throws DatabaseConnectionException if the query is empty or it fails.
+     * @throws DatabaseException if the query is empty or it fails.
      */
     public static function one(string $query = null, array $params = null): array
     {
-        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
 
         try {
             $statement = self::$connection->prepare($query);
@@ -269,7 +269,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'One failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'One failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -289,11 +289,11 @@ class Database
      *  $entries = $db->all('user');
      *
      * @return array An array containing all of the result set rows.
-     * @throws DatabaseConnectionException if the query is empty or it fails.
+     * @throws DatabaseException if the query is empty or it fails.
      */
     public static function all(string $query = null, array $params = null): array
     {
-        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
 
         try {
             $statement = self::$connection->prepare($query);
@@ -303,7 +303,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'All failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'All failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -324,11 +324,11 @@ class Database
      *  $entries = $db->row('user', 'name', 'John Doe');
      *
      * @return array The first row of the result set.
-     * @throws DatabaseConnectionException if the table, column or value is empty or the query fails.
+     * @throws DatabaseException if the table, column or value is empty or the query fails.
      */
     public static function row(string $table = null, string $column = null, mixed $value = null): array
     {
-        throw_when(is_null($table) || is_null($column) || is_null($value), ['All parameters are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($column) || is_null($value), ['All parameters are required', func_get_args()], DatabaseException::class);
 
         $sql = "SELECT * FROM `$table` WHERE `$column` = :value";
 
@@ -342,7 +342,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Row failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Row failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -365,7 +365,7 @@ class Database
      */
     public static function column(string $table = null, string $column = null): array
     {
-        throw_when(is_null($table) || is_null($column), ['All parameters ar required' . func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($column), ['All parameters ar required' . func_get_args()], DatabaseException::class);
 
         $sql = "SELECT `{$column}` FROM `{$table}`";
 
@@ -377,7 +377,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Column failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Column failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -399,7 +399,7 @@ class Database
      *    $value = $db->value('name', 'user', 'id', 1);
      *
      * @return array The first column of the result set.
-     * @throws DatabaseConnectionException if the table, interest, column or value is empty or the query fails.
+     * @throws DatabaseException if the table, interest, column or value is empty or the query fails.
      */
     public static function value(string $table = null, string $interest = null, string $column = null, mixed $value = null): array
     {
@@ -409,7 +409,7 @@ class Database
                 'All parameters are required',
                 func_get_args()
             ],
-            DatabaseConnectionException::class
+            DatabaseException::class
         );
 
         $sql = "SELECT `{$interest}` FROM `{$table}` WHERE `{$column}` = :value";
@@ -424,7 +424,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Value failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Value failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -443,11 +443,11 @@ class Database
      * $userCount = $db->count('user');
      *
      * @return integer The number of rows in the result set.
-     * @throws DatabaseConnectionException if the table is empty or the query fails.
+     * @throws DatabaseException if the table is empty or the query fails.
      */
     public static function count($table = null): int
     {
-        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         $sql = "SELECT COUNT(`id`) FROM `{$table}`";
 
@@ -459,7 +459,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Count failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Count failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -482,7 +482,7 @@ class Database
      * ]);
      *
      * @return integer
-     * @throws DatabaseConnectionException if the table or data is empty or the query fails.
+     * @throws DatabaseException if the table or data is empty or the query fails.
      */
     public static function insert(string $table = null, array $data = []): int
     {
@@ -492,7 +492,7 @@ class Database
             'All parameters are required',
             func_get_args()
             ],
-            DatabaseConnectionException::class
+            DatabaseException::class
         );
 
         if (!self::tableExists($table)) {
@@ -512,7 +512,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Insert failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Insert failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -537,7 +537,7 @@ class Database
      * ]);
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table, column, columnValue or data is empty or the query fails.
+     * @throws DatabaseException if the table, column, columnValue or data is empty or the query fails.
      */
     public static function update(string $table = null, string $column = null, mixed $columnValue = null, array $data = []): bool
     {
@@ -547,7 +547,7 @@ class Database
                 'All parameters are required',
                 func_get_args()
             ],
-            DatabaseConnectionException::class
+            DatabaseException::class
         );
 
         $placeholders = implode(', ', array_map(function ($key) {
@@ -564,7 +564,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Update failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Update failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -585,11 +585,11 @@ class Database
      *   $insert = $db->delete('user', 'id', 1);
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table, column or value is empty or the query fails.
+     * @throws DatabaseException if the table, column or value is empty or the query fails.
      */
     public static function delete(string $table = null, string $column = null, mixed $value = null): bool
     {
-        throw_when(is_null($table) || is_null($column) || is_null($value), ['All parameters are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($column) || is_null($value), ['All parameters are required', func_get_args()], DatabaseException::class);
 
         $sql = "DELETE FROM `{$table}` WHERE `{$column}` = :value";
 
@@ -603,7 +603,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Delete failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Delete failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -617,7 +617,7 @@ class Database
      * lastInsertId()
      *
      * @return integer
-     * @throws DatabaseConnectionException if the query fails.
+     * @throws DatabaseException if the query fails.
      */
     public static function lastInsertId(): int|false
     {
@@ -626,7 +626,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Last insert ID failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Last insert ID failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -643,11 +643,11 @@ class Database
      * @param array  $data  Data to be inserted
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table or data is empty or the query fails.
+     * @throws DatabaseException if the table or data is empty or the query fails.
      */
     public static function createTable($table = null, array $data = []): bool
     {
-        throw_when(is_null($table) || empty($data), ['Table name and data are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || empty($data), ['Table name and data are required', func_get_args()], DatabaseException::class);
 
         $columnDefinitions = implode(', ', array_map(function ($key, $value) {
             if (!in_array($key, ['id', 'created_at', 'updated_at'])) {
@@ -666,7 +666,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Create table failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Create table failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -682,11 +682,11 @@ class Database
      * @param string $table The table
      *
      * @return boolean TRUE on success or FALSE on failure.
-     * @throws DatabaseConnectionException if the table is empty or the query fails.
+     * @throws DatabaseException if the table is empty or the query fails.
      */
     public static function dropTable($table = null): bool
     {
-        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         $sql = "DROP TABLE IF EXISTS `{$table}`";
 
@@ -697,7 +697,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Drop table failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Drop table failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -713,11 +713,11 @@ class Database
      * @param string $table The table
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table is empty or the query fails.
+     * @throws DatabaseException if the table is empty or the query fails.
      */
     public static function truncateTable($table = null): bool
     {
-        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         $sql = "TRUNCATE TABLE `{$table}`";
 
@@ -728,7 +728,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Truncate table failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Truncate table failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -747,7 +747,7 @@ class Database
      */
     public static function getColumns($table = null): array
     {
-        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
         $sql = "SHOW COLUMNS FROM `{$table}`";
 
@@ -759,7 +759,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Get column names failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Get column names failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -779,7 +779,7 @@ class Database
      */
     public static function columnExists($table = null, $column = null): bool
     {
-        throw_when(is_null($table) || is_null($column), ['Table and column names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($column), ['Table and column names are required', func_get_args()], DatabaseException::class);
 
         $sql = 'SELECT COUNT(*) FROM information_schema.columns WHERE `table_schema` = :database AND `table_name` = :table AND `column_name` = :column;';
 
@@ -797,7 +797,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Column exists failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Column exists failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -818,7 +818,7 @@ class Database
      */
     public static function createColumn($table = null, $name = null, mixed $value = null): bool
     {
-        throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseException::class);
 
         if (self::columnExists($table, $name)) {
             return true;
@@ -833,7 +833,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Create column failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Create column failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -850,11 +850,11 @@ class Database
      * @param string $name  The column name
      *
      * @return boolean TRUE on success or FALSE on failure.
-     * @throws DatabaseConnectionException if the table or column is empty or the query fails.
+     * @throws DatabaseException if the table or column is empty or the query fails.
      */
     public static function deleteColumn($table, $name): bool
     {
-        throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseException::class);
 
         $sql = "ALTER TABLE `{$table}` DROP `{$name}`";
 
@@ -865,7 +865,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Delete column failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Delete column failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -907,11 +907,11 @@ class Database
      * @param string $new_name The new column name
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table, old_name or new_name is empty or the query fails.
+     * @throws DatabaseException if the table, old_name or new_name is empty or the query fails.
      */
     public static function renameColumn($table, $old_name, $new_name): bool
     {
-        throw_when(is_null($table) || is_null($old_name) || is_null($new_name), ['Table and column names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($old_name) || is_null($new_name), ['Table and column names are required', func_get_args()], DatabaseException::class);
 
         $sql = "ALTER TABLE `{$table}` CHANGE `{$old_name}` `{$new_name}` " . self::getColumnDataType($table, $old_name);
 
@@ -922,7 +922,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Rename column failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Rename column failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -939,11 +939,11 @@ class Database
      * @param string $name  The column name
      *
      * @return string
-     * @throws DatabaseConnectionException if the table or name is empty or the query fails.
+     * @throws DatabaseException if the table or name is empty or the query fails.
      */
     public static function getColumnDataType($table, $name): string
     {
-        throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseException::class);
 
         $sql = 'SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = :table AND COLUMN_NAME = :name';
 
@@ -960,7 +960,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Get column data type failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Get column data type failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -977,11 +977,11 @@ class Database
      * @param string $name  The index name
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table or name is empty or the query fails.
+     * @throws DatabaseException if the table or name is empty or the query fails.
      */
     public static function indexExists($table = null, $name = null): bool
     {
-        throw_when(is_null($table) || is_null($name), ['Table and index names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and index names are required', func_get_args()], DatabaseException::class);
 
         $sql = 'SELECT COUNT(*) FROM information_schema.statistics WHERE `table_schema` = :database AND `table_name` = :table AND `index_name` = :name;';
 
@@ -999,7 +999,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Index exists failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Index exists failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -1021,7 +1021,7 @@ class Database
      */
     public static function createIndex($table, $name, $type, $value): bool
     {
-        throw_when(is_null($table) || is_null($name) || is_null($type) || is_null($value), ['All parameters are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name) || is_null($type) || is_null($value), ['All parameters are required', func_get_args()], DatabaseException::class);
 
         if (self::indexExists($table, $name)) {
             return true;
@@ -1036,7 +1036,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Create index failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Create index failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -1053,11 +1053,11 @@ class Database
      * @param string $name  The index name
      *
      * @return boolean TRUE on success or FALSE on failure.
-     * @throws DatabaseConnectionException if the table or name is empty or the query fails.
+     * @throws DatabaseException if the table or name is empty or the query fails.
      */
     public static function deleteIndex($table, $name): bool
     {
-        throw_when(is_null($table) || is_null($name), ['Table and index names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and index names are required', func_get_args()], DatabaseException::class);
 
         $sql = "ALTER TABLE `{$table}` DROP INDEX `{$name}`";
 
@@ -1068,7 +1068,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Delete index failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Delete index failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -1085,11 +1085,11 @@ class Database
      * @param string $name  The foreign key name
      *
      * @return boolean
-     * @throws DatabaseConnectionException if the table or name is empty or the query fails.
+     * @throws DatabaseException if the table or name is empty or the query fails.
      */
     public static function foreignKeyExists($table = null, $name = null): bool
     {
-        throw_when(is_null($table) || is_null($name), ['Table and foreign key names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and foreign key names are required', func_get_args()], DatabaseException::class);
 
         $sql = 'SELECT COUNT(*) FROM information_schema.table_constraints WHERE `table_schema` = :database AND `table_name` = :table AND `constraint_name` = :name AND `constraint_type` = \'FOREIGN KEY\';';
 
@@ -1107,7 +1107,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Foreign key exists failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Foreign key exists failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -1131,7 +1131,7 @@ class Database
      */
     public static function createForeignKey($table, $foreignTable, $name, $value, $onDelete = 'NO ACTION', $onUpdate = 'NO ACTION'): bool
     {
-        throw_when(is_null($table) || is_null($foreignTable) || is_null($name) || is_null($value), ['All parameters are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($foreignTable) || is_null($name) || is_null($value), ['All parameters are required', func_get_args()], DatabaseException::class);
 
         $sql = "ALTER TABLE `{$table}` ADD CONSTRAINT `{$name}` FOREIGN KEY (`{$value}`) REFERENCES `{$foreignTable}` (`id`) ON DELETE `{$onDelete}` ON UPDATE `{$onUpdate}`";
 
@@ -1142,7 +1142,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Create foreign key failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Create foreign key failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
@@ -1162,7 +1162,7 @@ class Database
      */
     public static function deleteForeignKey($table, $name): bool
     {
-        throw_when(is_null($table) || is_null($name), ['Table and foreign key names are required', func_get_args()], DatabaseConnectionException::class);
+        throw_when(is_null($table) || is_null($name), ['Table and foreign key names are required', func_get_args()], DatabaseException::class);
 
         $sql = "ALTER TABLE `{$table}` DROP FOREIGN KEY `{$name}`";
 
@@ -1173,7 +1173,7 @@ class Database
         } catch (\Throwable $th) {
             log_to_file('database', 'Delete foreign key failed: ', $th->getMessage());
 
-            throw new DatabaseConnectionException(
+            throw new DatabaseException(
                 'Delete foreign key failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),

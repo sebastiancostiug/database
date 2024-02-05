@@ -15,6 +15,8 @@
 
 namespace database;
 
+use database\exceptions\DatabaseRecordException;
+
 /**
  * Record class
  */
@@ -66,6 +68,7 @@ class Record
      * @param string $class Class
      *
      * @return void
+     * -- commented @throws DatabaseRecordException If the table does not exist.
      */
     public function __construct($class = null)
     {
@@ -73,7 +76,7 @@ class Record
 
         self::$table = strtolower(class_basename($class));
 
-        // throw_when(!$this->tableExists(static::$table), static::$table . ' has no table');
+        // throw_when(!$this->database->tableExists(static::$table), [static::$table . ' table does not exist'], DatabaseRecordException::class);
     }
 
     /**
