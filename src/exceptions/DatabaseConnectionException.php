@@ -21,24 +21,24 @@ namespace database\exceptions;
 class DatabaseConnectionException extends \Exception
 {
     /**
-     * @var array $errorInfo The errors that occurred during the connection.
+     * @var array $debugInfo The errors that occurred during the connection.
      */
-    private array $_errorInfo;
+    private array $_debugInfo;
 
     /**
      * DatabaseConnectionException constructor.
      *
      * @param string          $message   The exception message.
-     * @param array           $errorInfo The PDO errors that occurred during the connection.
+     * @param array           $debugInfo The debug info for the error that occurred during the connection.
      * @param integer         $code      The exception code.
      * @param \Throwable|null $previous  The previous exception used for the exception chaining.
      *
      * @return void
      */
-    public function __construct(string $message, array $errorInfo = [], int $code = 0, ?\Throwable $previous = null)
+    public function __construct(string $message, array $debugInfo = [], int $code = 0, ?\Throwable $previous = null)
     {
         parent::__construct($message);
-        $this->_errorInfo = $errorInfo;
+        $this->_debugInfo = $debugInfo;
     }
 
     /**
@@ -46,8 +46,8 @@ class DatabaseConnectionException extends \Exception
      *
      * @return array The errors that occurred during the connection.
      */
-    public function geterrorInfo(): array
+    public function getDebugInfo(): array
     {
-        return $this->_errorInfo;
+        return $this->_debugInfo;
     }
 }
