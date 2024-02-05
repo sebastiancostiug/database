@@ -17,6 +17,7 @@ namespace database;
 
 use PDO;
 use common\Singleton;
+use database\exceptions\DatabaseConnectionException;
 
 /**
  * Database class
@@ -90,7 +91,7 @@ class Database
         } catch (\PDOException $e) {
             log_to_file('database', 'Connection failed:', $e->getMessage());
 
-            throw new \PDOException('Connection failed:' . $e->getMessage());
+            throw new DatabaseConnectionException('Connection failed:' . $e->getMessage(), $e->errorInfo);
         }
     }
 
