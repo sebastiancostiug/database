@@ -48,22 +48,20 @@ interface RecordInterface
     /**
      * Get record by field
      *
-     * @param  string $field Field
-     * @param  string $value Value
+     * @param  array $conditions Conditions
      *
      * @return self|false The model instance if found, or false if not found.
      */
-    public static function findBy(string $field, string $value): self|false;
+    public static function findBy(array $conditions): self|false;
 
     /**
      * Get records by field
      *
-     * @param  string $field Field
-     * @param  string $value Value
+     * @param  array $conditions Conditions
      *
      * @return array|false An array with all records of the model or false if no records are found.
      */
-    public static function findAllBy(string $field, string $value): array|false;
+    public static function findAllBy(array $conditions): array|false;
 
     /**
      * save record
