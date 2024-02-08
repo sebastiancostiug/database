@@ -429,8 +429,12 @@ class Record
      */
     public function setAttributes(array $attributes): self
     {
+        $columns = $this->getColumns();
+
         foreach ($attributes as $key => $value) {
-            $this->attributes[$key] = $value;
+            if (in_array($key, $columns)) {
+                $this->attributes[$key] = $value;
+            }
         }
 
         return $this;

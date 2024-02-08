@@ -210,10 +210,10 @@ class Database
      *
      * $users = $db->query($query, $params);
      *
-     * @return array For successful SELECT, SHOW, DESCRIBE or EXPLAIN queries will return an array of rows.
+     * @return array|boolean For successful SELECT, SHOW, DESCRIBE or EXPLAIN queries will return an array of rows as associative arrays. For other successful queries will return TRUE. FALSE on failure.
      * @throws DatabaseException if the query is empty or it fails.
      */
-    public static function query(string $query = '', array $params = null): array
+    public static function query(string $query = '', array $params = null): array|bool
     {
         throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
 
@@ -221,6 +221,7 @@ class Database
             $statement = self::$connection->prepare($query);
 
             $command = strtolower(strtok($query, ' '));
+
             if (in_array($command, ['select', 'show', 'describe', 'explain'])) {
                 $statement->execute($params);
 
@@ -234,8 +235,9 @@ class Database
             throw new DatabaseException(
                 'Query failed: ' . $th->getMessage(),
                 [
-                    'params' => func_get_args(),
+                    'params'    => func_get_args(),
                     'errorInfo' => $th->errorInfo ?? null,
+                    'query'     => $query,
                 ],
             );
         }
@@ -253,10 +255,10 @@ class Database
      *     'age'   => 25,
      *  ]);
      *
-     * @return array The first row of the result set.
+     * @return mixed The first row of the result set.
      * @throws DatabaseException if the query is empty or it fails.
      */
-    public static function one(string $query = null, array $params = null): array
+    public static function one(string $query = null, array $params = null): mixed
     {
         throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
 
@@ -287,10 +289,10 @@ class Database
      *  Example:
      *  $entries = $db->all('user');
      *
-     * @return array An array containing all of the result set rows.
+     * @return array|boolean An array containing all of the result set rows.
      * @throws DatabaseException if the query is empty or it fails.
      */
-    public static function all(string $query = null, array $params = null): array
+    public static function all(string $query = null, array $params = null): array|bool
     {
         throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
 
@@ -322,10 +324,10 @@ class Database
      *  Example:
      *  $entries = $db->row('user', 'name', 'John Doe');
      *
-     * @return array The first row of the result set.
+     * @return mixed The first row of the result set.
      * @throws DatabaseException if the table, column or value is empty or the query fails.
      */
-    public static function row(string $table = null, string $column = null, mixed $value = null): array
+    public static function row(string $table = null, string $column = null, mixed $value = null): mixed
     {
         throw_when(is_null($table) || is_null($column) || is_null($value), ['All parameters are required', func_get_args()], DatabaseException::class);
 
@@ -360,9 +362,9 @@ class Database
      * Example:
      * $entries = $db->column('user', 'name');
      *
-     * @return array An array containing all of the result.
+     * @return array|boolean An array containing all of the result.
      */
-    public static function column(string $table = null, string $column = null): array
+    public static function column(string $table = null, string $column = null): array|bool
     {
         throw_when(is_null($table) || is_null($column), ['All parameters ar required' . func_get_args()], DatabaseException::class);
 
@@ -397,10 +399,10 @@ class Database
      *    Example:
      *    $value = $db->value('name', 'user', 'id', 1);
      *
-     * @return array The first column of the result set.
+     * @return mixed The first column of the result set.
      * @throws DatabaseException if the table, interest, column or value is empty or the query fails.
      */
-    public static function value(string $table = null, string $interest = null, string $column = null, mixed $value = null): array
+    public static function value(string $table = null, string $interest = null, string $column = null, mixed $value = null): mixed
     {
         throw_when(
             is_null($table) || is_null($interest) || is_null($column) || is_null($value),
@@ -441,10 +443,10 @@ class Database
      * Example:
      * $userCount = $db->count('user');
      *
-     * @return integer The number of rows in the result set.
+     * @return mixed The number of rows in the result set.
      * @throws DatabaseException if the table is empty or the query fails.
      */
-    public static function count($table = null): int
+    public static function count($table = null): mixed
     {
         throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
@@ -742,9 +744,9 @@ class Database
      *
      * @param string|null $table The name of the table. If null, retrieves column names for all tables.
      *
-     * @return array An array of column names.
+     * @return array|boolean An array of column names.
      */
-    public static function getColumns($table = null): array
+    public static function getColumns($table = null): array|bool
     {
         throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
 
@@ -937,10 +939,10 @@ class Database
      * @param string $table The table
      * @param string $name  The column name
      *
-     * @return string
+     * @return mixed
      * @throws DatabaseException if the table or name is empty or the query fails.
      */
-    public static function getColumnDataType($table, $name): string
+    public static function getColumnDataType($table, $name): mixed
     {
         throw_when(is_null($table) || is_null($name), ['Table and column names are required', func_get_args()], DatabaseException::class);
 

@@ -15,43 +15,13 @@
 
 namespace database;
 
+use common\Exception;
+
 /**
  * DatabaseConnectionException class
  */
-class DatabaseException extends \Exception
+class DatabaseException extends Exception
 {
-    /**
-     * @var array $debugInfo The errors that occurred during the connection.
-     */
-    private array $_debugInfo;
-
-    /**
-     * DatabaseException constructor.
-     *
-     * @param string          $message   The exception message.
-     * @param array           $debugInfo The debug info for the error that occurred during the connection.
-     * @param integer         $code      The exception code.
-     * @param \Throwable|null $previous  The previous exception used for the exception chaining.
-     *
-     * @return void
-     */
-    public function __construct(string $message, array $debugInfo = [], int $code = 0, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-
-        $this->_debugInfo = $debugInfo;
-    }
-
-    /**
-     * Get the errors that occurred during the connection.
-     *
-     * @return array The errors that occurred during the connection.
-     */
-    public function getDebugInfo(): array
-    {
-        return $this->_debugInfo;
-    }
-
     /**
      * Get the exception name.
      *
