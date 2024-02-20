@@ -23,6 +23,27 @@ use common\Exception;
 class DatabaseException extends Exception
 {
     /**
+     * construct()
+     *
+     * @param string     $message  The exception message.
+     * @param array      $errors   The validation errors.
+     * @param integer    $code     The exception code.
+     * @param \Throwable $previous The previous exception.
+     *
+     * @return void
+     */
+    public function __construct(string $message = '', array $errors = [], int $code = 0, ?\Throwable $previous = null)
+    {
+        $errorMsg = $message;
+
+        // Extract the error code
+        preg_match('/SQLSTATE\[\w+\]: (.+)/', $errorMsg, $matches);
+        $message = $matches[1] ?? 'Unknown database error';
+
+        parent::__construct($message, $errors, $code, $previous);
+    }
+
+    /**
      * Get the exception name.
      *
      * @return string The exception name.
