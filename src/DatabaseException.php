@@ -38,7 +38,10 @@ class DatabaseException extends Exception
 
         // Extract the error code
         preg_match('/SQLSTATE\[\w+\]: (.+)/', $errorMsg, $matches);
-        $message = $matches[1] ?? 'Unknown database error';
+        $databaseName = config('database.database');
+        $message      = str_after($matches[1], ': ') ?? 'Unknown database error';
+        $message      = preg_replace('/^\d+/', '', trim($message));
+        $message      = str_replace($databaseName . '.', '', $message);
 
         parent::__construct($message, $errors, $code, $previous);
     }
