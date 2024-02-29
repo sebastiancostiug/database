@@ -33,7 +33,7 @@ class Database
     /**
      * @var \PDO $connection
      */
-    protected static ?\PDO $connection;
+    protected static ?\PDO $connection = null;
 
     /**
      * @var string $logFile Log file
@@ -109,6 +109,16 @@ class Database
     public function __destruct()
     {
         self::$connection = null;
+    }
+
+    /**
+     * Check if the database is connected.
+     *
+     * @return bool Returns true if the database is connected, false otherwise.
+     */
+    public static function connected(): bool
+    {
+        return self::$connection !== null;
     }
 
     /**

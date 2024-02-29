@@ -80,6 +80,41 @@ class Record
     }
 
     /**
+     * tableExists
+     *
+     * @return boolean
+     */
+    public function tableExists(): bool
+    {
+        return $this->database->tableExists(static::$table);
+    }
+
+    /**
+     * columnExists
+     *
+     * @param string $column Column
+     *
+     * @return boolean
+     */
+    public function columnExists($column): bool
+    {
+        return $this->database->columnExists(static::$table, $column);
+    }
+
+    /**
+     * exists
+     *
+     * @param string $column Column
+     * @param string $value  Value
+     *
+     * @return boolean
+     */
+    public function exists($column, $value): bool
+    {
+        return (bool) $this->find()->where([$column => $value])->one();
+    }
+
+    /**
      * Sets the SQL query to retrieve all records from the table.
      *
      * @return self
