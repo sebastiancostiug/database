@@ -534,6 +534,62 @@ class Database
     }
 
     /**
+     * Batch insert data into a database table.
+     *
+     * @param string $table The name of the table to insert data into.
+     * @param array $data An array of data to be inserted into the table.
+     *
+     * @return int The number of rows affected by the insert operation.
+     */
+    public static function batchInsert(string $table = null, array $data = []): int
+    {
+        throw_when(
+            is_null($table) || empty($data),
+            [
+            'All parameters are required',
+            func_get_args()
+            ],
+            DatabaseException::class
+        );
+
+        if (!self::tableExists($table)) {
+            self::createTable($table, $data);
+        }
+
+        $keys = implode('`, `', array_keys($data));
+        $placeholders = implode(', ', array_fill(0, count($data), '?'));
+
+        $sql = "INSERT INTO `$table` (`$keys`) VALUES ";
+
+        $values = [];
+        $rowCount = count($data[array_key_first($data)]);
+        for ($i = 0; $i < $rowCount; $i++) {
+            $sql .= "($placeholders),";
+            foreach ($data as $column) {
+                $values[] = $column[$i];
+            }
+        }
+        $sql = rtrim($sql, ',');
+
+        try {
+            $statement = self::$connection->prepare($sql);
+            $statement->execute($values);
+
+            return self::lastInsertId();
+        } catch (\Throwable $th) {
+            log_to_file('database', 'Batch insert failed: ', $th->getMessage());
+
+            throw new DatabaseException(
+                'Batch insert failed: ' . $th->getMessage(),
+                [
+                    'params' => func_get_args(),
+                    'errorInfo' => $th->errorInfo ?? null
+                ]
+            );
+        }
+    }
+
+    /**
      * update()
      *
      * @param string $table       The table
