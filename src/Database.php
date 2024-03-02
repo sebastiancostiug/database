@@ -116,7 +116,7 @@ class Database
     /**
      * Check if the database is connected.
      *
-     * @return bool Returns true if the database is connected, false otherwise.
+     * @return boolean Returns true if the database is connected, false otherwise.
      */
     public static function connected(): bool
     {
@@ -551,9 +551,9 @@ class Database
      * Batch insert data into a database table.
      *
      * @param string $table The name of the table to insert data into.
-     * @param array $data An array of data to be inserted into the table.
+     * @param array  $data  An array of data to be inserted into the table.
      *
-     * @return int The number of rows affected by the insert operation.
+     * @return integer The number of rows affected by the insert operation.
      */
     public static function batchInsert(string $table = null, array $data = []): int
     {

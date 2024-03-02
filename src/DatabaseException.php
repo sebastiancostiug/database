@@ -34,18 +34,6 @@ class DatabaseException extends Exception
      */
     public function __construct(string $message = '', array $errors = [], int $code = 0, ?\Throwable $previous = null)
     {
-        $errorMsg = $message;
-
-        // Extract the error code
-        if(preg_match('/SQLSTATE\[(\w+)\]/', $errorMsg, $matches)) {
-            $databaseName = config('database.database');
-            $message      = str_after($matches[1], ': ') ?? 'Unknown database error';
-            $message      = preg_replace('/^\d+/', '', trim($message));
-            $message      = str_replace($databaseName . '.', '', $message);
-        } else {
-            $message = $errorMsg;
-        }
-
         parent::__construct($message, $errors, $code, $previous);
     }
 
