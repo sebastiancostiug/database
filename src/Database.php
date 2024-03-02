@@ -33,7 +33,7 @@ class Database
     /**
      * @var \PDO $connection
      */
-    protected static ?\PDO $connection = null;
+    protected static ?\PDO $connection;
 
     /**
      * @var string $logFile Log file
@@ -61,12 +61,13 @@ class Database
 
         self::$_database = $databaseInfo['database'];
 
-        $driver   = $databaseInfo['driver'];
-        $host     = $databaseInfo['host'];
-        $port     = $databaseInfo['port'];
-        $charset  = $databaseInfo['encoding'];
-        $username = $databaseInfo['username'];
-        $password = $databaseInfo['password'];
+        $driver    = $databaseInfo['driver'] ?? 'mysql';
+        $host      = $databaseInfo['host'];
+        $port      = $databaseInfo['port'] ?? '3306';
+        $charset   = $databaseInfo['encoding'] ?? 'utf8mb4';
+        $collation = $databaseInfo['collation'] ?? 'utf8mb4_unicode_ci';
+        $username  = $databaseInfo['username'];
+        $password  = $databaseInfo['password'];
 
         switch ($driver) {
             case 'mysql':
@@ -86,6 +87,7 @@ class Database
 
         try {
             self::$connection = new \PDO($dsn, $username, $password);
+            // self::$connection->exec("SET NAMES '$charset' COLLATE '$collation'");
             self::$connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             self::$connection->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
         } catch (\PDOException $e) {
@@ -118,7 +120,17 @@ class Database
      */
     public static function connected(): bool
     {
-        return self::$connection !== null;
+        if (!self::$connection) {
+            return false;
+        }
+
+        try {
+            self::$connection->query('SELECT 1');
+        } catch (\PDOException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -132,6 +144,7 @@ class Database
     public static function tableExists($table = null): bool
     {
         throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
+        throw_when(!self::connected(), 'Database is not connected', DatabaseException::class);
 
         // $cacheKey = "table_exists_$table";
         // $cachedResult = self::$cache->get($cacheKey);
@@ -180,6 +193,7 @@ class Database
     public static function tableIsEmpty($table = null): bool
     {
         throw_when(is_null($table), ['Table name is required', func_get_args()], DatabaseException::class);
+        throw_when(!self::connected(), 'Database connection failed', DatabaseException::class);
 
         // $cacheKey = "table_is_empty_$table";
         // $cachedResult = self::$cache->get($cacheKey);
@@ -633,6 +647,46 @@ class Database
 
             throw new DatabaseException(
                 'Update failed: ' . $th->getMessage(),
+                [
+                    'params' => func_get_args(),
+                    'errorInfo' => $th->errorInfo ?? null
+                ]
+            );
+        }
+    }
+
+    public static function upsert(string $table = null, array $data = []): bool
+    {
+        throw_when(
+            is_null($table) || empty($data),
+            [
+                'All parameters are required',
+                func_get_args()
+            ],
+            DatabaseException::class
+        );
+
+        $keys = implode('`, `', array_keys($data));
+        $placeholders = implode(', ', array_fill(0, count($data), '?'));
+
+        $sql = "INSERT INTO `$table` (`$keys`) VALUES ($placeholders) ON DUPLICATE KEY UPDATE ";
+
+        $update = [];
+        foreach ($data as $key => $value) {
+            $update[] = "`$key` = VALUES(`$key`)";
+        }
+        $sql .= implode(', ', $update);
+
+        try {
+            $statement = self::$connection->prepare($sql);
+            $statement->execute(array_values($data));
+
+            return true;
+        } catch (\Throwable $th) {
+            log_to_file('database', 'Upsert failed: ', $th->getMessage());
+
+            throw new DatabaseException(
+                'Upsert failed: ' . $th->getMessage(),
                 [
                     'params' => func_get_args(),
                     'errorInfo' => $th->errorInfo ?? null
