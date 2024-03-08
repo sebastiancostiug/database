@@ -417,12 +417,10 @@ class Record
     public function save(): int|bool
     {
         if ($this->isNewRecord()) {
-            $id = $this->database->insert(static::$table, $this->attributes);
+            return $this->database->insert(static::$table, $this->attributes);
         } else {
-            $id = $this->database->update(static::$table, 'id', $this->attributes['id'], $this->attributes);
+            return $this->database->update(static::$table, 'id', $this->attributes['id'], $this->attributes);
         }
-
-        return $id;
     }
 
     /**

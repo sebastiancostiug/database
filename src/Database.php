@@ -655,6 +655,14 @@ class Database
         }
     }
 
+    /**
+     * Upserts data into the specified table.
+     *
+     * @param string $table The name of the table to upsert data into.
+     * @param array  $data  The data to be upserted into the table.
+     *
+     * @return boolean Returns true if the upsert operation was successful, false otherwise.
+     */
     public static function upsert(string $table = null, array $data = []): bool
     {
         throw_when(
@@ -679,9 +687,8 @@ class Database
 
         try {
             $statement = self::$connection->prepare($sql);
-            $statement->execute(array_values($data));
 
-            return true;
+            return $statement->execute(array_values($data));
         } catch (\Throwable $th) {
             log_to_file('database', 'Upsert failed: ', $th->getMessage());
 
