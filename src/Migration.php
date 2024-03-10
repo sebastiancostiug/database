@@ -215,6 +215,8 @@ class Migration
             foreach ($this->interactions[$table]['columnsToAdd'] as $name => $column) {
                 $this->sql .= 'ADD COLUMN `' . $name . '` ' . $column . ', ';
             }
+
+            $this->sql = rtrim($this->sql, ', ');
         }
 
         return $this;
