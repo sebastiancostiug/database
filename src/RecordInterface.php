@@ -66,9 +66,9 @@ interface RecordInterface
     /**
      * save record
      *
-     * @return integer|false
+     * @return integer|boolean The ID of the inserted record or boolean on update and failure.
      */
-    public function save(): int|false;
+    public function save(): int|bool;
 
     /**
      * delete record
