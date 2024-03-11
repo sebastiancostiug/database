@@ -324,12 +324,13 @@ class Record
      * Adds an ORDER BY clause to the SQL query.
      *
      * @param string $field The name of the field to order by.
+     * @param string $order The direction to order the results (e.g. "ASC" or "DESC").
      *
      * @return self Returns the current instance of the Record class.
      */
-    public function orderBy($field): self
+    public function orderBy($field, $order = 'ASC'): self
     {
-        $this->sql = $this->sql . ' ORDER BY ' . $field;
+        $this->sql = $this->sql . ' ORDER BY ' . $field . ' ' . $order;
 
         return $this;
     }

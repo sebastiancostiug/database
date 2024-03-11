@@ -34,7 +34,8 @@ class DatabaseException extends Exception
      */
     public function __construct(string $message = '', array $errors = [], int $code = 0, ?\Throwable $previous = null)
     {
-        $message = $message . ' The query was: ' . $errors['query'] ?? '';
+        $query = $errors['query'] ?? $errors['params'][0] ?? '';
+        $message = $message . ' The query was: ' . $query;
         parent::__construct($message, $errors, $code, $previous);
     }
 
