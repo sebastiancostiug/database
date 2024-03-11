@@ -349,6 +349,30 @@ class Record
     }
 
     /**
+     * Sets the offset for the SQL query.
+     *
+     * @param integer $offset The number of rows to skip.
+     *
+     * @return self Returns the Record instance for method chaining.
+     */
+    public function offset($offset): self
+    {
+        $this->sql = $this->sql . ' OFFSET ' . $offset;
+
+        return $this;
+    }
+
+    /**
+     * Count the number of records
+     *
+     * @return integer
+     */
+    public function count(): int
+    {
+        return $this->database->count(static::$table);
+    }
+
+    /**
      * has relation
      *
      * @param string $foreignTable Foreign table
