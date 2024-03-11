@@ -129,13 +129,14 @@ class Record
     /**
      * Adds a WHERE clause to the SQL query based on the given conditions.
      *
-     * @param array $conditions An associative array of column-value pairs to use in the WHERE clause.
+     * @param array  $conditions An associative array of column-value pairs to use in the WHERE clause.
+     * @param string $operator   The operator to use for each condition (e.g. "=", "LIKE").
      *
      * @return $this The current instance of the Record object.
      */
-    public function where(array $conditions): self
+    public function where(array $conditions, string $operator = '='): self
     {
-        $this->addConditions(' WHERE ', $conditions, ' AND ');
+        $this->addConditions(' WHERE ', $conditions, $operator);
 
         return $this;
     }
@@ -143,13 +144,14 @@ class Record
     /**
      * Adds an "AND" clause to the WHERE statement of the query.
      *
-     * @param array $conditions An associative array of conditions to add to the WHERE statement.
+     * @param array  $conditions An associative array of conditions to add to the WHERE statement.
+     * @param string $operator   The operator to use for each condition (e.g. "=", "LIKE").
      *
      * @return $this The current instance of the Record object.
      */
-    public function andWhere(array $conditions): self
+    public function andWhere(array $conditions, string $operator = '='): self
     {
-        $this->addConditions(' AND ', $conditions, ' AND ');
+        $this->addConditions(' AND ', $conditions, $operator);
 
         return $this;
     }
@@ -157,45 +159,14 @@ class Record
     /**
      * Adds an OR WHERE clause to the query.
      *
-     * @param array $conditions An associative array of conditions to add to the query.
+     * @param array  $conditions An associative array of conditions to add to the query.
+     * @param string $operator   The operator to use for each condition (e.g. "=", "LIKE").
      *
      * @return $this
      */
-    public function orWhere(array $conditions): self
+    public function orWhere(array $conditions, string $operator = '='): self
     {
-        $this->addConditions(' OR ', $conditions, ' OR ');
-
-        return $this;
-    }
-
-    /**
-     * Adds a "LIKE" condition to the query.
-     *
-     * @param string $field The field to search.
-     * @param string $value The value to search for.
-     *
-     * @return $this
-     */
-    public function like($field, $value): self
-    {
-        $this->sql .= ' WHERE `' . $field . '` LIKE :' . $field;
-        $this->params[$field] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Adds a "NOT LIKE" condition to the query.
-     *
-     * @param string $field The field to search.
-     * @param string $value The value to search for.
-     *
-     * @return $this
-     */
-    public function notLike($field, $value): self
-    {
-        $this->sql .= ' WHERE `' . $field . '` NOT LIKE :' . $field;
-        $this->params[$field] = $value;
+        $this->addConditions(' OR ', $conditions, $operator);
 
         return $this;
     }
@@ -294,30 +265,34 @@ class Record
         return $this;
     }
 
-
     /**
      * Adds conditions to the SQL query.
      *
-     * @param string $prefix     The prefix to add before the conditions (e.g. "WHERE").
+     * @param string $prefix     The prefix to add before the conditions (e.g. "WHERE", "AND", "OR").
      * @param array  $conditions An associative array of conditions to add to the query.
-     * @param string $suffix     The suffix to add after each condition (e.g. "=").
+     * @param string $operator   The operator to use for each condition (e.g. "=", "LIKE").
      *
      * @return void
      */
-    private function addConditions($prefix, array $conditions, $suffix): void
+    private function addConditions(string $prefix, array $conditions, string $operator = '='): void
     {
-        if (strpos($this->sql, ' WHERE ') === false) {
-            $prefix = ' WHERE ';
+        $logicalOperator = ' AND ';
+        if ($prefix === ' OR ') {
+            $logicalOperator = ' OR ';
         }
 
         $conditionsStr = '';
         foreach ($conditions as $key => $value) {
-            $conditionsStr .= '`' . $key . '`' . ' = :' . $key . $suffix;
+            $conditionsStr .= '`' . $key . '`' . ' ' . $operator . ' :' . $key . $logicalOperator;
             $this->params[$key] = $value;
         }
-        $conditionsStr = rtrim($conditionsStr, $suffix);
+        $conditionsStr = rtrim($conditionsStr, $logicalOperator);
 
-        $this->sql .= $prefix . $conditionsStr;
+        if (strpos($this->sql, ' WHERE ') === false) {
+            $this->sql .= ' WHERE ' . $conditionsStr;
+        } else {
+            $this->sql .= $prefix . $conditionsStr;
+        }
     }
 
     /**
