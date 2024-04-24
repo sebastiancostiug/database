@@ -36,6 +36,8 @@ class DatabaseException extends Exception
     {
         $query = $errors['query'] ?? $errors['params'][0] ?? '';
         $message = $message . ' The query was: ' . $query;
+
+        log_to_file('database_errors', $message, 'error: ' . print_r($errors, true));
         parent::__construct($message, $errors, $code, $previous);
     }
 

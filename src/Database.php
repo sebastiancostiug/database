@@ -50,24 +50,24 @@ class Database
      * It reads the database configuration from the config file and creates a PDO instance.
      * It supports MySQL and SQLite drivers.
      *
-     * @throws \PDOException if the connection fails or the driver is not supported.
+     * @param array|null $credentials The database credentials.
      *
      * @return mixed
      * @throws DatabaseException if the connection fails or the driver is not supported.
      */
-    final protected function __construct()
+    final protected function __construct($credentials = null)
     {
-        $databaseInfo = config('database');
+        $databaseInfo = $credentials ?? parse_ini_file(base_path('.env'));
 
-        self::$_database = $databaseInfo['database'];
+        self::$_database = $databaseInfo['DB_DATABASE'] ?? 'database';
 
-        $driver    = $databaseInfo['driver'] ?? 'mysql';
-        $host      = $databaseInfo['host'];
-        $port      = $databaseInfo['port'] ?? '3306';
-        $charset   = $databaseInfo['encoding'] ?? 'utf8mb4';
-        $collation = $databaseInfo['collation'] ?? 'utf8mb4_unicode_ci';
-        $username  = $databaseInfo['username'];
-        $password  = $databaseInfo['password'];
+        $driver    = $databaseInfo['DB_CONNECTION'] ?? 'mysql';
+        $host      = $databaseInfo['DB_HOST'] ?? 'localhost';
+        $port      = $databaseInfo['DB_PORT'] ?? '3306';
+        $charset   = $databaseInfo['DB_ENCODING'] ?? 'utf8mb4';
+        $collation = $databaseInfo['DB_COLLATION'] ?? 'utf8mb4_unicode_ci';
+        $username  = $databaseInfo['DB_USERNAME'] ?? 'slim_base';
+        $password  = $databaseInfo['DB_PASSWORD'] ?? 'password';
 
         switch ($driver) {
             case 'mysql':
@@ -79,10 +79,7 @@ class Database
                 break;
 
             default:
-                log_to_file('database', 'Unsupported database driver: ', $driver);
-
                 throw new DatabaseException("Unsupported database driver: $driver");
-            break;
         }
 
         try {
@@ -91,8 +88,6 @@ class Database
             self::$connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             self::$connection->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
         } catch (\PDOException $e) {
-            log_to_file('database', 'Connection failed: ', $e->getMessage());
-
             throw new DatabaseException(
                 'Connection failed: ' . $e->getMessage(),
                 [
@@ -170,8 +165,6 @@ class Database
 
             return $exists;
         } catch (\Throwable $th) {
-            log_to_file('database', 'Table exists failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Table exists failed: ' . $th->getMessage(),
                 [
@@ -207,8 +200,6 @@ class Database
 
             return $result;
         } catch (\Throwable $th) {
-            log_to_file('database', 'Table is empty failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Table is empty failed: ' . $th->getMessage(),
                 [
@@ -217,6 +208,18 @@ class Database
                 ]
             );
         }
+    }
+
+    /**
+     * Quotes a value to make it safe for use in a database query.
+     *
+     * @param mixed $value The value to be quoted.
+     *
+     * @return string The quoted value.
+     */
+    public function quote(mixed $value): string
+    {
+        return $this->connection->quote($value);
     }
 
     /**
@@ -254,8 +257,6 @@ class Database
 
             return $statement->execute($params);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Query failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Query failed: ' . $th->getMessage(),
                 [
@@ -263,77 +264,6 @@ class Database
                     'errorInfo' => $th->errorInfo ?? null,
                     'query'     => $query,
                 ],
-            );
-        }
-    }
-
-    /**
-     * select one from a table
-     *
-     * @param string|null $query  The query
-     * @param array|null  $params The query parameters
-     *
-     *  Example:
-     *  $entry = $db->one('user', 'name = :name AND age > :age', [
-     *      'name'  => 'John Doe',
-     *     'age'   => 25,
-     *  ]);
-     *
-     * @return mixed The first row of the result set.
-     * @throws DatabaseException if the query is empty or it fails.
-     */
-    public static function one(string $query = null, array $params = null): mixed
-    {
-        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
-
-        try {
-            $statement = self::$connection->prepare($query);
-            $statement->execute($params);
-
-            return $statement->fetch(PDO::FETCH_ASSOC);
-        } catch (\Throwable $th) {
-            log_to_file('database', 'One failed: ', $th->getMessage());
-
-            throw new DatabaseException(
-                'One failed: ' . $th->getMessage(),
-                [
-                    'params' => func_get_args(),
-                    'errorInfo' => $th->errorInfo ?? null,
-                ]
-            );
-        }
-    }
-
-    /**
-     * select all from a table
-     *
-     * @param string|null $query  The query
-     * @param array|null  $params The query parameters
-     *
-     *  Example:
-     *  $entries = $db->all('user');
-     *
-     * @return array|boolean An array containing all of the result set rows.
-     * @throws DatabaseException if the query is empty or it fails.
-     */
-    public static function all(string $query = null, array $params = null): array|bool
-    {
-        throw_when(empty($query), ['Query is required', func_get_args()], DatabaseException::class);
-
-        try {
-            $statement = self::$connection->prepare($query);
-            $statement->execute($params);
-
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\Throwable $th) {
-            log_to_file('database', 'All failed: ', $th->getMessage());
-
-            throw new DatabaseException(
-                'All failed: ' . $th->getMessage(),
-                [
-                    'params' => func_get_args(),
-                    'errorInfo' => $th->errorInfo ?? null
-                ]
             );
         }
     }
@@ -365,8 +295,6 @@ class Database
 
             return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Row failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Row failed: ' . $th->getMessage(),
                 [
@@ -400,8 +328,6 @@ class Database
 
             return $statement->fetchAll(PDO::FETCH_COLUMN);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Column failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Column failed: ' . $th->getMessage(),
                 [
@@ -447,8 +373,6 @@ class Database
 
             return $statement->fetch(PDO::FETCH_COLUMN);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Value failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Value failed: ' . $th->getMessage(),
                 [
@@ -482,8 +406,6 @@ class Database
 
             return $statement->fetch(PDO::FETCH_COLUMN);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Count failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Count failed: ' . $th->getMessage(),
                 [
@@ -535,8 +457,6 @@ class Database
 
             return self::lastInsertId();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Insert failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Insert failed: ' . $th->getMessage(),
                 [
@@ -591,8 +511,6 @@ class Database
 
             return self::lastInsertId();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Batch insert failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Batch insert failed: ' . $th->getMessage(),
                 [
@@ -643,8 +561,6 @@ class Database
 
             return $statement->execute($data);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Update failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Update failed: ' . $th->getMessage(),
                 [
@@ -690,8 +606,6 @@ class Database
 
             return $statement->execute(array_values($data));
         } catch (\Throwable $th) {
-            log_to_file('database', 'Upsert failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Upsert failed: ' . $th->getMessage(),
                 [
@@ -729,8 +643,6 @@ class Database
 
             return true;
         } catch (\Throwable $th) {
-            log_to_file('database', 'Delete failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Delete failed: ' . $th->getMessage(),
                 [
@@ -752,8 +664,6 @@ class Database
         try {
             return self::$connection->lastInsertId();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Last insert ID failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Last insert ID failed: ' . $th->getMessage(),
                 [
@@ -792,8 +702,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Create table failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Create table failed: ' . $th->getMessage(),
                 [
@@ -823,8 +731,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Drop table failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Drop table failed: ' . $th->getMessage(),
                 [
@@ -854,8 +760,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Truncate table failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Truncate table failed: ' . $th->getMessage(),
                 [
@@ -885,8 +789,6 @@ class Database
 
             return $statement->fetchAll(PDO::FETCH_COLUMN);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Get column names failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Get column names failed: ' . $th->getMessage(),
                 [
@@ -923,8 +825,6 @@ class Database
 
             return !empty($result);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Column exists failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Column exists failed: ' . $th->getMessage(),
                 [
@@ -959,8 +859,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Create column failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Create column failed: ' . $th->getMessage(),
                 [
@@ -991,8 +889,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Delete column failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Delete column failed: ' . $th->getMessage(),
                 [
@@ -1021,9 +917,13 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Modify column failed: ', $th->getMessage());
-
-            return false;
+            throw new DatabaseException(
+                'Modify column failed: ' . $th->getMessage(),
+                [
+                    'params' => func_get_args(),
+                    'errorInfo' => $th->errorInfo ?? null
+                ]
+            );
         }
     }
 
@@ -1048,8 +948,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Rename column failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Rename column failed: ' . $th->getMessage(),
                 [
@@ -1086,8 +984,6 @@ class Database
 
             return $statement->fetch(PDO::FETCH_COLUMN);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Get column data type failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Get column data type failed: ' . $th->getMessage(),
                 [
@@ -1125,8 +1021,6 @@ class Database
 
             return !empty($result);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Index exists failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Index exists failed: ' . $th->getMessage(),
                 [
@@ -1162,8 +1056,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Create index failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Create index failed: ' . $th->getMessage(),
                 [
@@ -1194,8 +1086,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Delete index failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Delete index failed: ' . $th->getMessage(),
                 [
@@ -1233,8 +1123,6 @@ class Database
 
             return !empty($result);
         } catch (\Throwable $th) {
-            log_to_file('database', 'Foreign key exists failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Foreign key exists failed: ' . $th->getMessage(),
                 [
@@ -1268,8 +1156,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Create foreign key failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Create foreign key failed: ' . $th->getMessage(),
                 [
@@ -1299,8 +1185,6 @@ class Database
 
             return $statement->execute();
         } catch (\Throwable $th) {
-            log_to_file('database', 'Delete foreign key failed: ', $th->getMessage());
-
             throw new DatabaseException(
                 'Delete foreign key failed: ' . $th->getMessage(),
                 [
