@@ -55,9 +55,9 @@ class Database
      * @return mixed
      * @throws DatabaseException if the connection fails or the driver is not supported.
      */
-    final protected function __construct($credentials = null)
+    final protected function __construct($credentials = [])
     {
-        $databaseInfo = $credentials ?? parse_ini_file(base_path('.env'));
+        $databaseInfo = !empty($credentials) ? $credentials : parse_ini_file(base_path('.env'));
 
         self::$_database = $databaseInfo['DB_DATABASE'] ?? 'database';
 

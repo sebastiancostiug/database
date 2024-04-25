@@ -651,49 +651,67 @@ class Query
      */
     private function prepare()
     {
-        $sql = 'SELECT ';
+        if ($this->sql !== null) {
+            switch (strtoupper(substr($this->sql, 0, 6))) {
+                case 'INSERT':
+                    return;
+                case 'UPDATE':
+                    if ($this->where !== null) {
+                        $this->sql .= ' WHERE ' . $this->where;
+                    }
+                    return;
+                case 'DELETE':
+                    $this->sql .= $this->from;
+                    if ($this->where !== null) {
+                        $this->sql .= ' WHERE ' . $this->where;
+                    }
+                    return;
+            }
+        }
+
+        $this->sql = 'SELECT ';
 
         if ($this->distinct) {
-            $sql .= 'DISTINCT ';
+            $this->sql .= 'DISTINCT ';
         }
 
         if (empty($this->select)) {
-            $sql .= '*';
+            $this->sql .= '*';
         } else {
-            $sql .= implode(', ', $this->select);
+            $this->sql .= implode(', ', $this->select);
         }
 
-        $sql .= ' FROM ' . $this->from;
+        $this->sql .= ' FROM ' . $this->from;
 
         if ($this->join !== null) {
-            $sql .= ' ' . $this->joinType . ' JOIN ' . $this->join[0] . ' ON ' . $this->join[1];
+            $this->sql .= ' ' . $this->joinType . ' JOIN ' . $this->join[0] . ' ON ' . $this->join[1];
         }
 
         if ($this->where !== null) {
-            $sql .= ' WHERE ' . $this->where;
+            $this->sql .= ' WHERE ' . $this->where;
         }
 
         if ($this->groupBy !== null) {
-            $sql .= ' GROUP BY ' . $this->groupBy;
+            $this->sql .= ' GROUP BY ' . $this->groupBy;
         }
 
         if ($this->having !== null) {
-            $sql .= ' HAVING ' . $this->having;
+            $this->sql .= ' HAVING ' . $this->having;
         }
 
         if ($this->orderBy !== null) {
-            $sql .= ' ORDER BY ' . $this->orderBy;
+            $this->sql .= ' ORDER BY ' . $this->orderBy;
         }
 
         if ($this->limit !== null) {
-            $sql .= ' LIMIT ' . $this->limit;
+            $this->sql .= ' LIMIT ' . $this->limit;
         }
 
         if ($this->offset !== null) {
-            $sql .= ' OFFSET ' . $this->offset;
+            $this->sql .= ' OFFSET ' . $this->offset;
         }
 
-        $this->sql = $sql;
+        return;
     }
 
     /**
@@ -706,5 +724,39 @@ class Query
         $this->prepare();
 
         return $this->db->query($this->sql, $this->params);
+    }
+
+    /**
+     * Retrieves a single row from the database.
+     *
+     * @return mixed The fetched row from the database.
+     */
+    public function one()
+    {
+        $this->limit(1);
+
+        return $this->execute();
+    }
+
+    /**
+     * Retrieve all records from the database.
+     *
+     * @return array The array of records retrieved from the database.
+     */
+    public function all()
+    {
+        return $this->execute();
+    }
+
+    /**
+     * Get the value of the query.
+     *
+     * @return mixed The value of the query.
+     */
+    public function scalar()
+    {
+        $result = $this->execute();
+
+        return $result ? reset($result) : null;
     }
 }
