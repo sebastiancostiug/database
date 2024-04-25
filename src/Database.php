@@ -211,18 +211,6 @@ class Database
     }
 
     /**
-     * Quotes a value to make it safe for use in a database query.
-     *
-     * @param mixed $value The value to be quoted.
-     *
-     * @return string The quoted value.
-     */
-    public function quote(mixed $value): string
-    {
-        return $this->connection->quote($value);
-    }
-
-    /**
      * execute custom query
      *
      * @param string     $query  The query

@@ -229,6 +229,25 @@ class Query
     }
 
     /**
+     * Saves data to the specified table.
+     *
+     * @param string  $table     The name of the table to save data to.
+     * @param array   $columns   An array of column names.
+     * @param array   $values    An array of values to be saved.
+     * @param boolean $newRecord Optional. Indicates whether this is a new record. Default is false.
+     *
+     * @return self Returns an instance of the Query class.
+     */
+    public function save($table, array $columns, array $values, $newRecord = false): self
+    {
+        if ($newRecord) {
+            return $this->insert($table, $columns, $values);
+        }
+
+        return $this->update($table, $columns, $values);
+    }
+
+    /**
      * Deletes records from the database.
      *
      * @return $this The current Query instance.
@@ -243,11 +262,11 @@ class Query
     /**
      * Selects columns from the database table.
      *
-     * @param array $columns The columns to select.
+     * @param array|string $columns The columns to select.
      *
      * @return $this The current Query instance.
      */
-    public function select(array $columns = []): self
+    public function select($columns = []): self
     {
         $this->select = $this->normalizeColumns($columns);
 
@@ -283,12 +302,12 @@ class Query
             foreach ($conditions as $key => $value) {
                 if (is_string($key)) {
                     // Handle associative array conditions
-                    $this->where[] = "$key = :$key";
+                    $this->where[] = "`$key` = :$key";
                     $this->params[":$key"] = $value;
                 } elseif (is_array($value) && count($value) === 3) {
                     // Handle array conditions with three elements
                     [$operator, $column, $value] = $value;
-                    $this->where[] = "$column $operator :$column";
+                    $this->where[] = "`$column` $operator :$column";
                     $this->params[":$column"] = $value;
                 }
             }
@@ -300,7 +319,7 @@ class Query
     /**
      * Adds an "AND" condition to the query.
      *
-     * @param mixed $conditions The conditions to add.
+     * @param array|string $conditions The conditions to add.
      *
      * @return self The updated Query object.
      */
@@ -312,12 +331,12 @@ class Query
             foreach ($conditions as $key => $value) {
                 if (is_string($key)) {
                     // Handle associative array conditions
-                    $this->where[] = "$key = :$key";
+                    $this->where[] = "`$key` = :$key";
                     $this->params[":$key"] = $value;
                 } elseif (is_array($value) && count($value) === 3) {
                     // Handle array conditions with three elements
                     [$operator, $column, $value] = $value;
-                    $this->where[] = "$column $operator :$column";
+                    $this->where[] = "`$column` $operator :$column";
                     $this->params[":$column"] = $value;
                 }
             }
@@ -329,7 +348,7 @@ class Query
     /**
      * Adds an OR condition to the query.
      *
-     * @param mixed $conditions The conditions to be added.
+     * @param array|string $conditions The conditions to be added.
      *
      * @return self The updated Query object.
      */
@@ -341,12 +360,12 @@ class Query
             foreach ($conditions as $key => $value) {
                 if (is_string($key)) {
                     // Handle associative array conditions
-                    $this->orWhere[] = "$key = :$key";
+                    $this->orWhere[] = "`$key` = :$key";
                     $this->params[":$key"] = $value;
                 } elseif (is_array($value) && count($value) === 3) {
                     // Handle array conditions with three elements
                     [$operator, $column, $value] = $value;
-                    $this->orWhere[] = "$column $operator :$column";
+                    $this->orWhere[] = "`$column` $operator :$column";
                     $this->params[":$column"] = $value;
                 }
             }
@@ -482,7 +501,7 @@ class Query
     /**
      * Adds a HAVING clause to the query.
      *
-     * @param mixed $conditions The conditions for the HAVING clause.
+     * @param array|string $conditions The conditions for the HAVING clause.
      *
      * @return self
      */
@@ -496,7 +515,7 @@ class Query
                     $this->having[] = $condition;
                 } elseif (is_array($condition) && count($condition) === 3) {
                     [$operator, $column, $value] = $condition;
-                    $this->having[] = "$column $operator :$column";
+                    $this->having[] = "`$column` $operator :$column";
                     $this->params[":$column"] = $value;
                 }
             }
@@ -508,7 +527,7 @@ class Query
     /**
      * Adds an "AND HAVING" condition to the query.
      *
-     * @param mixed $conditions The conditions to add.
+     * @param array|string $conditions The conditions to add.
      *
      * @return self The updated Query object.
      */
@@ -522,7 +541,7 @@ class Query
                     $this->having[] = $condition;
                 } elseif (is_array($condition) && count($condition) === 3) {
                     [$operator, $column, $value] = $condition;
-                    $this->having[] = "$column $operator :$column";
+                    $this->having[] = "`$column` $operator :$column";
                     $this->params[":$column"] = $value;
                 }
             }
@@ -534,7 +553,7 @@ class Query
     /**
      * Adds an "OR HAVING" condition to the query.
      *
-     * @param mixed $conditions The conditions to add.
+     * @param array|string $conditions The conditions to add.
      *
      * @return self The updated Query object.
      */
@@ -548,7 +567,7 @@ class Query
                     $this->orHaving[] = $condition;
                 } elseif (is_array($condition) && count($condition) === 3) {
                     [$operator, $column, $value] = $condition;
-                    $this->orHaving[] = "$column $operator :$column";
+                    $this->orHaving[] = "`$column` $operator :$column";
                     $this->params[":$column"] = $value;
                 }
             }
@@ -679,7 +698,7 @@ class Query
      *
      * @return $this The current Query instance.
      */
-    public function via($via): self
+    public function via(mixed $via): self
     {
         $this->via = $via;
 
@@ -816,10 +835,105 @@ class Query
      *
      * @return mixed The value of the query.
      */
-    public function scalar()
+    public function selected()
     {
+        $this->limit(1);
+        $results = $this->execute();
+
+        if ($results && is_array($results[0])) {
+            // Get the column names from the select method
+            $columns = $this->select();
+
+            // Initialize an array to store the values
+            $values = [];
+
+            // Loop through the column names and retrieve the corresponding values
+            foreach ($columns as $column) {
+                $values[$column] = $results[0][$column] ?? null;
+            }
+
+            return (count($values) > 1) ? $values : reset($values);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the count of the query results.
+     *
+     * @return integer The count of the query results.
+     */
+    public function count()
+    {
+        $this->select('COUNT(*) as count');
         $result = $this->execute();
 
-        return $result ? reset($result) : null;
+        return $result[0]['count'];
+    }
+
+    /**
+     * Get the maximum value of a column.
+     *
+     * @param string $column The column name.
+     * @return mixed The maximum value of the column.
+     */
+    public function max($column)
+    {
+        $this->select("MAX($column) as max");
+        $result = $this->execute();
+
+        return $result[0]['max'];
+    }
+
+    /**
+     * Get the minimum value of a column from the query result.
+     *
+     * @param string $column The column to retrieve the minimum value from.
+     * @return mixed The minimum value of the specified column.
+     */
+    public function min($column)
+    {
+        $this->select("MIN($column) as min");
+        $result = $this->execute();
+
+        return $result[0]['min'];
+    }
+
+    /**
+     * Calculates the sum of a specified column in the query result.
+     *
+     * @param string $column The name of the column to calculate the sum for.
+     * @return float|null The sum of the specified column, or null if no result is found.
+     */
+    public function sum($column)
+    {
+        $this->select("SUM($column) as sum");
+        $result = $this->execute();
+
+        return $result[0]['sum'];
+    }
+
+    /**
+     * Calculate the average value of a given column.
+     *
+     * @param string $column The name of the column to calculate the average on.
+     * @return float The average value of the column.
+     */
+    public function avg($column)
+    {
+        $this->select("AVG($column) as avg");
+        $result = $this->execute();
+
+        return $result[0]['avg'];
+    }
+
+    /**
+     * Executes the query and returns the last inserted ID.
+     *
+     * @return integer The last inserted ID.
+     */
+    public function lastInsertId()
+    {
+        return $this->db->lastInsertId();
     }
 }
