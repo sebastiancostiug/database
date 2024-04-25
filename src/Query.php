@@ -57,6 +57,11 @@ class Query
     protected $where;
 
     /**
+     * @var mixed $orWhere The OR WHERE clause of the query.
+     */
+    protected $orWhere;
+
+    /**
      * @var string|null The ORDER BY clause of the query.
      */
     protected $orderBy;
@@ -70,6 +75,11 @@ class Query
      * @var mixed $having The HAVING clause of the query.
      */
     protected $having;
+
+    /**
+     * @var mixed $orHaving The OR HAVING clause of the query.
+     */
+    protected $orHaving;
 
     /**
      * @var boolean $distinct Whether the query should return distinct results.
@@ -262,15 +272,27 @@ class Query
      * Sets the WHERE clause for the query.
      *
      * @param array|string $conditions The conditions for the WHERE clause.
-     * @param array        $params     The parameters to bind to the query.
      *
      * @return $this The current Query instance.
      */
-    public function where($conditions, array $params = []): self
+    public function where($conditions): self
     {
-
-        $this->where = $conditions;
-        $this->addParams($params);
+        if (is_string($conditions)) {
+            $this->where[] = $conditions;
+        } elseif (is_array($conditions)) {
+            foreach ($conditions as $key => $value) {
+                if (is_string($key)) {
+                    // Handle associative array conditions
+                    $this->where[] = "$key = :$key";
+                    $this->params[":$key"] = $value;
+                } elseif (is_array($value) && count($value) === 3) {
+                    // Handle array conditions with three elements
+                    [$operator, $column, $value] = $value;
+                    $this->where[] = "$column $operator :$column";
+                    $this->params[":$column"] = $value;
+                }
+            }
+        }
 
         return $this;
     }
@@ -278,21 +300,28 @@ class Query
     /**
      * Adds an "AND" condition to the query.
      *
-     * @param array|string $conditions The conditions to be added.
-     * @param array        $params     The parameters to bind to the query.
+     * @param mixed $conditions The conditions to add.
      *
-     * @return $this The current Query instance.
+     * @return self The updated Query object.
      */
-    public function andWhere($conditions, array $params = []): self
+    public function andWhere($conditions): self
     {
-        if ($this->where === null) {
-            $this->where = $conditions;
-        } elseif (is_array($this->where) && isset($this->where[0]) && strcasecmp($this->where[0], 'and') === 0) {
+        if (is_string($conditions)) {
             $this->where[] = $conditions;
-        } else {
-            $this->where = ['and', $this->where, $conditions];
+        } elseif (is_array($conditions)) {
+            foreach ($conditions as $key => $value) {
+                if (is_string($key)) {
+                    // Handle associative array conditions
+                    $this->where[] = "$key = :$key";
+                    $this->params[":$key"] = $value;
+                } elseif (is_array($value) && count($value) === 3) {
+                    // Handle array conditions with three elements
+                    [$operator, $column, $value] = $value;
+                    $this->where[] = "$column $operator :$column";
+                    $this->params[":$column"] = $value;
+                }
+            }
         }
-        $this->addParams($params);
 
         return $this;
     }
@@ -300,21 +329,28 @@ class Query
     /**
      * Adds an OR condition to the query.
      *
-     * @param array|string $conditions The conditions to be added.
-     * @param array        $params     The parameters to bind to the query.
+     * @param mixed $conditions The conditions to be added.
      *
-     * @return $this The current Query instance.
+     * @return self The updated Query object.
      */
-    public function orWhere($conditions, array $params = []): self
+    public function orWhere($conditions): self
     {
-        if ($this->where === null) {
-            $this->where = $conditions;
-        } elseif (is_array($this->where) && isset($this->where[0]) && strcasecmp($this->where[0], 'or') === 0) {
-            $this->where[] = $conditions;
-        } else {
-            $this->where = ['or', $this->where, $conditions];
+        if (is_string($conditions)) {
+            $this->orWhere[] = $conditions;
+        } elseif (is_array($conditions)) {
+            foreach ($conditions as $key => $value) {
+                if (is_string($key)) {
+                    // Handle associative array conditions
+                    $this->orWhere[] = "$key = :$key";
+                    $this->params[":$key"] = $value;
+                } elseif (is_array($value) && count($value) === 3) {
+                    // Handle array conditions with three elements
+                    [$operator, $column, $value] = $value;
+                    $this->orWhere[] = "$column $operator :$column";
+                    $this->params[":$column"] = $value;
+                }
+            }
         }
-        $this->addParams($params);
 
         return $this;
     }
@@ -444,17 +480,27 @@ class Query
     }
 
     /**
-     * Sets the HAVING clause for the query.
+     * Adds a HAVING clause to the query.
      *
-     * @param array|string $conditions The conditions for the HAVING clause.
-     * @param array        $params     The parameters to bind to the query.
+     * @param mixed $conditions The conditions for the HAVING clause.
      *
-     * @return $this The current Query instance.
+     * @return self
      */
-    public function having($conditions, array $params = []): self
+    public function having($conditions): self
     {
-        $this->having = $conditions;
-        $this->addParams($params);
+        if (is_string($conditions)) {
+            $this->having[] = $conditions;
+        } elseif (is_array($conditions)) {
+            foreach ($conditions as $condition) {
+                if (is_string($condition)) {
+                    $this->having[] = $condition;
+                } elseif (is_array($condition) && count($condition) === 3) {
+                    [$operator, $column, $value] = $condition;
+                    $this->having[] = "$column $operator :$column";
+                    $this->params[":$column"] = $value;
+                }
+            }
+        }
 
         return $this;
     }
@@ -462,43 +508,51 @@ class Query
     /**
      * Adds an "AND HAVING" condition to the query.
      *
-     * @param array|string $conditions The conditions to be added.
-     * @param array        $params     The parameters to be bound to the conditions.
+     * @param mixed $conditions The conditions to add.
      *
-     * @return $this The current Query instance.
+     * @return self The updated Query object.
      */
-    public function andHaving($conditions, array $params = []): self
+    public function andHaving($conditions): self
     {
-        if ($this->having === null) {
-            $this->having = $conditions;
-        } elseif (is_array($this->having) && isset($this->having[0]) && strcasecmp($this->having[0], 'and') === 0) {
+        if (is_string($conditions)) {
             $this->having[] = $conditions;
-        } else {
-            $this->having = ['and', $this->having, $conditions];
+        } elseif (is_array($conditions)) {
+            foreach ($conditions as $condition) {
+                if (is_string($condition)) {
+                    $this->having[] = $condition;
+                } elseif (is_array($condition) && count($condition) === 3) {
+                    [$operator, $column, $value] = $condition;
+                    $this->having[] = "$column $operator :$column";
+                    $this->params[":$column"] = $value;
+                }
+            }
         }
-        $this->addParams($params);
 
         return $this;
     }
 
     /**
-     * Adds an OR condition to the HAVING clause of the query.
+     * Adds an "OR HAVING" condition to the query.
      *
-     * @param array|string $conditions The conditions to be added.
-     * @param array        $params     The parameters to be bound to the conditions.
+     * @param mixed $conditions The conditions to add.
      *
-     * @return $this The current Query instance.
+     * @return self The updated Query object.
      */
-    public function orHaving($conditions, array $params = []): self
+    public function orHaving($conditions): self
     {
-        if ($this->having === null) {
-            $this->having = $conditions;
-        } elseif (is_array($this->having) && isset($this->having[0]) && strcasecmp($this->having[0], 'or') === 0) {
-            $this->having[] = $conditions;
-        } else {
-            $this->having = ['or', $this->having, $conditions];
+        if (is_string($conditions)) {
+            $this->orHaving[] = $conditions;
+        } elseif (is_array($conditions)) {
+            foreach ($conditions as $condition) {
+                if (is_string($condition)) {
+                    $this->orHaving[] = $condition;
+                } elseif (is_array($condition) && count($condition) === 3) {
+                    [$operator, $column, $value] = $condition;
+                    $this->orHaving[] = "$column $operator :$column";
+                    $this->params[":$column"] = $value;
+                }
+            }
         }
-        $this->addParams($params);
 
         return $this;
     }
@@ -688,7 +742,11 @@ class Query
         }
 
         if ($this->where !== null) {
-            $this->sql .= ' WHERE ' . $this->where;
+            $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
+        }
+
+        if ($this->orWhere !== null) {
+            $this->sql .= ' OR WHERE ' . implode(' OR ', $this->orWhere);
         }
 
         if ($this->groupBy !== null) {
@@ -696,7 +754,11 @@ class Query
         }
 
         if ($this->having !== null) {
-            $this->sql .= ' HAVING ' . $this->having;
+            $this->sql .= ' HAVING ' . implode(' AND ', $this->having);
+        }
+
+        if ($this->orHaving !== null) {
+            $this->sql .= ' OR HAVING ' . implode(' OR ', $this->orHaving);
         }
 
         if ($this->orderBy !== null) {
@@ -734,8 +796,9 @@ class Query
     public function one()
     {
         $this->limit(1);
+        $results = $this->execute();
 
-        return $this->execute();
+        return $results[0] ?? null;
     }
 
     /**
