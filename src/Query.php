@@ -664,20 +664,6 @@ class Query
     }
 
     /**
-     * Set the join type for the query.
-     *
-     * @param string $type The join type.
-     *
-     * @return $this The current Query instance.
-     */
-    public function joinType($type): self
-    {
-        $this->joinType = $type;
-
-        return $this;
-    }
-
-    /**
      * Set the relations to be eager loaded on the query.
      *
      * @param mixed $relations The relations to be eager loaded.
@@ -706,6 +692,151 @@ class Query
     }
 
     /**
+     * Retrieves a single row from the database.
+     *
+     * @return mixed The fetched row from the database.
+     */
+    public function one()
+    {
+        $this->limit(1);
+        $results = $this->execute();
+
+        return $results[0] ?? null;
+    }
+
+    /**
+     * Retrieve all records from the database.
+     *
+     * @return array The array of records retrieved from the database.
+     */
+    public function all()
+    {
+        return $this->execute();
+    }
+
+    /**
+     * Get the value of the query.
+     *
+     * @return mixed The value of the query.
+     */
+    public function selected()
+    {
+        $this->limit(1);
+        $results = $this->execute();
+
+        if ($results && is_array($results[0])) {
+            // Get the column names from the select method
+            $columns = $this->select();
+
+            // Initialize an array to store the values
+            $values = [];
+
+            // Loop through the column names and retrieve the corresponding values
+            foreach ($columns as $column) {
+                $values[$column] = $results[0][$column] ?? null;
+            }
+
+            return (count($values) > 1) ? $values : reset($values);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the count of the query results.
+     *
+     * @param string $table The table to count the results from.
+     *
+     * @return integer The count of the query results.
+     */
+    public function count($table)
+    {
+        throw_when(empty($table), 'Table must be provided for the count method.');
+
+        $this->select('COUNT(*) as count');
+        $this->from($table);
+        $result = $this->execute();
+
+        return $result[0]['count'];
+    }
+
+    /**
+     * Get the maximum value of a column.
+     *
+     * @param string $column The column name.
+     * @param string $table  The table name.
+     *
+     * @return mixed The maximum value of the column.
+     */
+    public function max($column, $table)
+    {
+        throw_when(empty($table) || empty($column), 'Table and column must be provided for the max method.');
+
+        $this->select("MAX($column) as max");
+        $this->from($table);
+        $result = $this->execute();
+
+        return $result[0]['max'];
+    }
+
+    /**
+     * Get the minimum value of a column from the query result.
+     *
+     * @param string $column The column to retrieve the minimum value from.
+     * @param string $table  The table to retrieve the minimum value from.
+     *
+     * @return mixed The minimum value of the specified column.
+     */
+    public function min($column, $table)
+    {
+        throw_when(empty($table) || empty($column), 'Table and column must be provided for the min method.');
+
+        $this->select("MIN($column) as min");
+        $this->from($table);
+        $result = $this->execute();
+
+        return $result[0]['min'];
+    }
+
+    /**
+     * Calculates the sum of a specified column in the query result.
+     *
+     * @param string $column The name of the column to calculate the sum for.
+     * @param string $table  The table to calculate the sum from.
+     *
+     * @return float|null The sum of the specified column, or null if no result is found.
+     */
+    public function sum($column, $table)
+    {
+        throw_when(empty($table) || empty($column), 'Table and column must be provided for the sum method.');
+
+        $this->select("SUM($column) as sum");
+        $this->from($table);
+        $result = $this->execute();
+
+        return $result[0]['sum'];
+    }
+
+    /**
+     * Calculate the average value of a given column.
+     *
+     * @param string $column The name of the column to calculate the average on.
+     * @param string $table  The table to calculate the average from.
+     *
+     * @return float The average value of the column.
+     */
+    public function avg($column, $table)
+    {
+        throw_when(empty($table) || empty($column), 'Table and column must be provided for the avg method.');
+
+        $this->select("AVG($column) as avg");
+        $this->from($table);
+        $result = $this->execute();
+
+        return $result[0]['avg'];
+    }
+
+    /**
      * Get the SQL query string.
      *
      * @return string The SQL query string.
@@ -715,6 +846,18 @@ class Query
         $this->prepare();
 
         return $this->sql;
+    }
+
+    /**
+     * Executes the query.
+     *
+     * @return mixed The query results.
+     */
+    public function execute()
+    {
+        $this->prepare();
+
+        return $this->db->query($this->sql, $this->params);
     }
 
     /**
@@ -796,144 +939,12 @@ class Query
     }
 
     /**
-     * Executes the query.
-     *
-     * @return mixed The query results.
-     */
-    public function execute()
-    {
-        $this->prepare();
-
-        return $this->db->query($this->sql, $this->params);
-    }
-
-    /**
-     * Retrieves a single row from the database.
-     *
-     * @return mixed The fetched row from the database.
-     */
-    public function one()
-    {
-        $this->limit(1);
-        $results = $this->execute();
-
-        return $results[0] ?? null;
-    }
-
-    /**
-     * Retrieve all records from the database.
-     *
-     * @return array The array of records retrieved from the database.
-     */
-    public function all()
-    {
-        return $this->execute();
-    }
-
-    /**
-     * Get the value of the query.
-     *
-     * @return mixed The value of the query.
-     */
-    public function selected()
-    {
-        $this->limit(1);
-        $results = $this->execute();
-
-        if ($results && is_array($results[0])) {
-            // Get the column names from the select method
-            $columns = $this->select();
-
-            // Initialize an array to store the values
-            $values = [];
-
-            // Loop through the column names and retrieve the corresponding values
-            foreach ($columns as $column) {
-                $values[$column] = $results[0][$column] ?? null;
-            }
-
-            return (count($values) > 1) ? $values : reset($values);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get the count of the query results.
-     *
-     * @return integer The count of the query results.
-     */
-    public function count()
-    {
-        $this->select('COUNT(*) as count');
-        $result = $this->execute();
-
-        return $result[0]['count'];
-    }
-
-    /**
-     * Get the maximum value of a column.
-     *
-     * @param string $column The column name.
-     * @return mixed The maximum value of the column.
-     */
-    public function max($column)
-    {
-        $this->select("MAX($column) as max");
-        $result = $this->execute();
-
-        return $result[0]['max'];
-    }
-
-    /**
-     * Get the minimum value of a column from the query result.
-     *
-     * @param string $column The column to retrieve the minimum value from.
-     * @return mixed The minimum value of the specified column.
-     */
-    public function min($column)
-    {
-        $this->select("MIN($column) as min");
-        $result = $this->execute();
-
-        return $result[0]['min'];
-    }
-
-    /**
-     * Calculates the sum of a specified column in the query result.
-     *
-     * @param string $column The name of the column to calculate the sum for.
-     * @return float|null The sum of the specified column, or null if no result is found.
-     */
-    public function sum($column)
-    {
-        $this->select("SUM($column) as sum");
-        $result = $this->execute();
-
-        return $result[0]['sum'];
-    }
-
-    /**
      * Calculate the average value of a given column.
      *
-     * @param string $column The name of the column to calculate the average on.
-     * @return float The average value of the column.
+     * @return mixed The database connection object.
      */
-    public function avg($column)
+    public function getInstance()
     {
-        $this->select("AVG($column) as avg");
-        $result = $this->execute();
-
-        return $result[0]['avg'];
-    }
-
-    /**
-     * Executes the query and returns the last inserted ID.
-     *
-     * @return integer The last inserted ID.
-     */
-    public function lastInsertId()
-    {
-        return $this->db->lastInsertId();
+        return $this->db;
     }
 }
