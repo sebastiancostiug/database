@@ -204,6 +204,11 @@ class Query
                 return array_key_exists($column, $value);
             });
 
+            // Escape column names with backticks
+            $escapedColumns = array_map(function ($column) {
+                return "`$column`";
+            }, $filteredColumns);
+
             $rowValues = [];
             foreach ($filteredColumns as $column) {
                 $rowValues[] = $value[$column];
@@ -213,7 +218,7 @@ class Query
             $this->params = array_merge($this->params, $rowValues);
         }
 
-        $this->sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $filteredColumns) . ') VALUES ' . implode(', ', $valuesPlaceholder);
+        $this->sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $escapedColumns) . ') VALUES ' . implode(', ', $valuesPlaceholder);
 
         return $this;
     }
@@ -222,21 +227,22 @@ class Query
      * Updates rows in the specified table.
      *
      * @param string $table   The name of the table.
-     * @param array  $columns The columns to update.
-     * @param array  $values  The values to update.
+     * @param array  $values  The columns and values to update.
      *
      * @return $this The current Query instance.
      */
-    public function update($table, array $columns, array $values): self
+    public function update($table, array $values): self
     {
         $this->params = [];
         $set = [];
 
-        foreach ($columns as $column) {
-            $set[] = $column . ' = ?';
-        }
+        // Filter columns that have values
+        $filteredColumns = array_keys($values);
 
-        $this->params = array_merge($this->params, $values);
+        foreach ($filteredColumns as $column) {
+            $set[] = "`$column` = :update_$column";
+            $this->params[":update_$column"] = $values[$column];
+        }
 
         $this->sql = 'UPDATE ' . $table . ' SET ' . implode(', ', $set);
 
@@ -247,19 +253,18 @@ class Query
      * Saves data to the specified table.
      *
      * @param string  $table     The name of the table to save data to.
-     * @param array   $columns   An array of column names.
      * @param array   $values    An array of values to be saved.
      * @param boolean $newRecord Optional. Indicates whether this is a new record. Default is false.
      *
      * @return self Returns an instance of the Query class.
      */
-    public function save($table, array $columns, array $values, $newRecord = false): self
+    public function save($table, array $values, $newRecord = false): self
     {
         if ($newRecord) {
-            return $this->insert($table, $columns, $values);
+            return $this->insert($table, array_keys($values), $values);
         }
 
-        return $this->update($table, $columns, $values);
+        return $this->update($table, $values)->where(['id' => $values['id']]);
     }
 
     /**
@@ -317,13 +322,13 @@ class Query
             foreach ($conditions as $key => $value) {
                 if (is_string($key)) {
                     // Handle associative array conditions
-                    $this->where[] = "`$key` = :$key";
-                    $this->params[":$key"] = $value;
+                    $this->where[] = "`$key` = :where_$key";
+                    $this->params[":where_$key"] = $value;
                 } elseif (is_array($value) && count($value) === 3) {
                     // Handle array conditions with three elements
                     [$operator, $column, $value] = $value;
-                    $this->where[] = "`$column` $operator :$column";
-                    $this->params[":$column"] = $value;
+                    $this->where[] = "`$column` $operator :where_$column";
+                    $this->params[":where_$column"] = $value;
                 }
             }
         }
@@ -346,13 +351,13 @@ class Query
             foreach ($conditions as $key => $value) {
                 if (is_string($key)) {
                     // Handle associative array conditions
-                    $this->where[] = "`$key` = :$key";
-                    $this->params[":$key"] = $value;
+                    $this->where[] = "`$key` = :where_$key";
+                    $this->params[":where_$key"] = $value;
                 } elseif (is_array($value) && count($value) === 3) {
                     // Handle array conditions with three elements
                     [$operator, $column, $value] = $value;
-                    $this->where[] = "`$column` $operator :$column";
-                    $this->params[":$column"] = $value;
+                    $this->where[] = "`$column` $operator :where_$column";
+                    $this->params[":where_$column"] = $value;
                 }
             }
         }
@@ -375,13 +380,13 @@ class Query
             foreach ($conditions as $key => $value) {
                 if (is_string($key)) {
                     // Handle associative array conditions
-                    $this->orWhere[] = "`$key` = :$key";
-                    $this->params[":$key"] = $value;
+                    $this->orWhere[] = "`$key` = :where_$key";
+                    $this->params[":where_$key"] = $value;
                 } elseif (is_array($value) && count($value) === 3) {
                     // Handle array conditions with three elements
                     [$operator, $column, $value] = $value;
-                    $this->orWhere[] = "`$column` $operator :$column";
-                    $this->params[":$column"] = $value;
+                    $this->orWhere[] = "`$column` $operator :where_$column";
+                    $this->params[":where_$column"] = $value;
                 }
             }
         }
@@ -530,8 +535,8 @@ class Query
                     $this->having[] = $condition;
                 } elseif (is_array($condition) && count($condition) === 3) {
                     [$operator, $column, $value] = $condition;
-                    $this->having[] = "`$column` $operator :$column";
-                    $this->params[":$column"] = $value;
+                    $this->having[] = "`$column` $operator :having_$column";
+                    $this->params[":having_$column"] = $value;
                 }
             }
         }
@@ -556,8 +561,8 @@ class Query
                     $this->having[] = $condition;
                 } elseif (is_array($condition) && count($condition) === 3) {
                     [$operator, $column, $value] = $condition;
-                    $this->having[] = "`$column` $operator :$column";
-                    $this->params[":$column"] = $value;
+                    $this->having[] = "`$column` $operator :having_$column";
+                    $this->params[":having_$column"] = $value;
                 }
             }
         }
@@ -582,8 +587,8 @@ class Query
                     $this->orHaving[] = $condition;
                 } elseif (is_array($condition) && count($condition) === 3) {
                     [$operator, $column, $value] = $condition;
-                    $this->orHaving[] = "`$column` $operator :$column";
-                    $this->params[":$column"] = $value;
+                    $this->orHaving[] = "`$column` $operator :having_$column";
+                    $this->params[":having_$column"] = $value;
                 }
             }
         }
@@ -888,7 +893,7 @@ class Query
                     return;
                 case 'UPDATE':
                     if ($this->where !== null) {
-                        $this->sql .= ' WHERE ' . $this->where;
+                        $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
                     }
                     return;
                 case 'DELETE':
