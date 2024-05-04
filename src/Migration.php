@@ -153,7 +153,7 @@ class Migration
 
             $sql = rtrim($sql, ', ');
 
-            $sql .= ') ENGINE=' . config('database.engine') . ' DEFAULT CHARSET=' . config('database.encoding') . ' COLLATE=' . config('database.collation');
+            $sql .= ') ENGINE=' . env('DB_ENGINE', 'InnoDB') . ' DEFAULT CHARSET=' . env('DDB_ENCODING', 'utf8mb4') . ' COLLATE=' . env('DB_COLLATION', 'utf8mb4_unicode_ci') . ' AUTO_INCREMENT=1';
 
             $this->database->query($sql);
         }
