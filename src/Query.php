@@ -193,12 +193,27 @@ class Query
         $this->params = [];
         $valuesPlaceholder = [];
 
-        foreach ($values as $value) {
-            $valuesPlaceholder[] = '(' . implode(', ', array_fill(0, count($value), '?')) . ')';
-            $this->params = array_merge($this->params, $value);
+        // If $values is not a multidimensional array, convert it to one for consistency
+        if (!is_array(reset($values))) {
+            $values = [$values];
         }
 
-        $this->sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $columns) . ') VALUES ' . implode(', ', $valuesPlaceholder);
+        foreach ($values as $value) {
+            // Filter columns that have values
+            $filteredColumns = array_filter($columns, function ($column) use ($value) {
+                return array_key_exists($column, $value);
+            });
+
+            $rowValues = [];
+            foreach ($filteredColumns as $column) {
+                $rowValues[] = $value[$column];
+            }
+
+            $valuesPlaceholder[] = '(' . implode(', ', array_fill(0, count($rowValues), '?')) . ')';
+            $this->params = array_merge($this->params, $rowValues);
+        }
+
+        $this->sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $filteredColumns) . ') VALUES ' . implode(', ', $valuesPlaceholder);
 
         return $this;
     }
@@ -701,7 +716,7 @@ class Query
         $this->limit(1);
         $results = $this->execute();
 
-        return $results[0] ?? null;
+        return $results[0] ?? false;
     }
 
     /**
@@ -936,6 +951,45 @@ class Query
         }
 
         return;
+    }
+
+    /**
+     * Check if the query is connected to the database.
+     *
+     * @return bool Returns true if the query is connected to the database, false otherwise.
+     */
+    public function connected(): bool
+    {
+        return $this->db->connected();
+    }
+
+    /**
+     * Checks if a table exists in the database.
+     *
+     * @param string $table The name of the table to check.
+     *
+     * @return bool True if the table exists, false otherwise.
+     */
+    public function tableExists($table): bool
+    {
+        return $this->db->tableExists($table);
+    }
+
+    /**
+     * Checks if a table is empty.
+     *
+     * @param string $table The name of the table to check.
+     *
+     * @return bool Returns true if the table is empty, false otherwise.
+     */
+    public function tableIsEmpty($table): bool
+    {
+        return $this->db->tableIsEmpty($table);
+    }
+
+    public function getColumns($table)
+    {
+        return $this->db->getColumns($table);
     }
 
     /**
