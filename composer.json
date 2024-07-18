@@ -20,8 +20,7 @@
     ],
     "require": {
         "php": "^8.3",
-        "sebastiancostiug/helpers": "dev-master",
-        "sebastiancostiug/common": "dev-master"
+        "overbyte/shared": "dev-master"
     },
     "autoload": {
         "psr-4": {
@@ -31,11 +30,7 @@
     "repositories": [
         {
             "type": "git",
-            "url": "https://github.com/sebastiancostiug/helpers.git"
-        },
-        {
-            "type": "git",
-            "url": "https://github.com/sebastiancostiug/common.git"
+            "url": "https://github.com/sebastiancostiug/shared.git"
         }
     ]
 }
