@@ -35,7 +35,9 @@ class DatabaseException extends Exception
     public function __construct(string $message = '', array $errors = [], int $code = 0, ?\Throwable $previous = null)
     {
         $query = $errors['query'] ?? $errors['params'][0] ?? '';
-        $message = $message . ' The query was: ' . $query;
+        $message = $message . (!empty($query) ? (PHP_EOL .'The query was: ' . PHP_EOL . $query) : '');
+
+        log_to_file('database_errors', $message, 'error: ' . print_r($errors, true));
         parent::__construct($message, $errors, $code, $previous);
     }
 
